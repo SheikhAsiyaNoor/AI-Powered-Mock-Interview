@@ -34,7 +34,7 @@ const Page = () => {
             await login(formData.email, formData.password);
             router.push("/dashboard");
         } catch (err: any) {
-            setError(err.message || "Failed to log in. Please check your email and password.");
+            setError(err.response?.data?.message || err.message || "Failed to log in. Please check your email and password.");
         } finally {
             setIsLoading(false);
         }

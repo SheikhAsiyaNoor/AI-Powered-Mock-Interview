@@ -86,7 +86,7 @@ const Page = () => {
             await register(formData.name, formData.email, formData.password);
             router.push("/dashboard");
         } catch (err: any) {
-            setError(err.message || "Registration failed. Please try again.");
+            setError(err.response?.data?.message || err.message || "Registration failed. Please try again.");
         } finally {
             setIsLoading(false);
         }
