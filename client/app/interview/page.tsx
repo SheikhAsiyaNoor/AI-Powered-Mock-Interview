@@ -15,7 +15,7 @@ interface InterviewSession {
     isComplete?: boolean;
 }
 
-const TOTAL_QUESTIONS = 3;
+const TOTAL_QUESTIONS = 5;
 
 const DOMAIN_EMOJIS: Record<string, string> = {
     "JavaScript": "🟨",
@@ -34,9 +34,8 @@ function ProgressDots({ current, total }: { current: number; total: number }) {
             {Array.from({ length: total }).map((_, i) => (
                 <div
                     key={i}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                        i < current ? "w-6 bg-blue-600" : "w-2 bg-muted"
-                    }`}
+                    className={`h-2 rounded-full transition-all duration-300 ${i < current ? "w-6 bg-blue-600" : "w-2 bg-muted"
+                        }`}
                 />
             ))}
         </div>
@@ -100,6 +99,13 @@ function InterviewContent() {
     const [sessionStartTime] = useState(Date.now());
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [currentDifficulty, setCurrentDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
+    const [difficultyHistory, setDifficultyHistory] = useState<Array<{ questionNumber: number; difficulty: string; evaluation: string; score: number }>>([]);
+    const [progressionReport, setProgressionReport] = useState<string>('');
+
+    const handleSkipQuestion = () => {
+        handleSendMessage("[Skipped Question]");
+    };
 
     useEffect(() => {
         if (!authLoading && !isLoggedIn) {
@@ -124,11 +130,13 @@ function InterviewContent() {
             if (data) {
                 setSessionId(data.sessionId);
                 setQuestionsAnswered(0);
+                setCurrentDifficulty(data.difficulty || "Medium");
                 setMessages([
                     {
                         id: "1",
-                        content: data.question || "Tell me about yourself and your experience with " + domain + ".",
+                        content: data.question || "Tell me about your experience with " + domain + ".",
                         isUser: false,
+                        difficulty: data.difficulty || "Medium",
                         timestamp: new Date(),
                     },
                 ]);
@@ -150,6 +158,8 @@ function InterviewContent() {
     const handleSendMessage = async (userMessage: string) => {
         if (!userMessage.trim() || !sessionId) return;
 
+        const isSkippedAction = userMessage === "[Skipped Question]";
+
         setMessages((prev) => [
             ...prev,
             {
@@ -167,11 +177,16 @@ function InterviewContent() {
                 answer: userMessage,
                 domain,
                 questionsAnswered,
+                isSkipped: isSkippedAction,
             });
 
             if (data) {
                 const newCount = questionsAnswered + 1;
                 setQuestionsAnswered(newCount);
+                if (data.difficultyHistory) setDifficultyHistory(data.difficultyHistory);
+                if (data.progressionReport) setProgressionReport(data.progressionReport);
+                if (data.nextDifficulty) setCurrentDifficulty(data.nextDifficulty);
+
                 setMessages((prev) => [
                     ...prev,
                     {
@@ -193,6 +208,7 @@ function InterviewContent() {
                                 id: Date.now().toString(),
                                 content: data.nextQuestion,
                                 isUser: false,
+                                difficulty: data.nextDifficulty || "Medium",
                                 timestamp: new Date(),
                             },
                         ]);
@@ -222,18 +238,18 @@ function InterviewContent() {
     const scoreLabel =
         score >= 80
             ? {
-                  text: "Excellent! You're interview-ready 🚀",
-                  color: "text-green-600 dark:text-green-400",
-              }
+                text: "Excellent! You're interview-ready 🚀",
+                color: "text-green-600 dark:text-green-400",
+            }
             : score >= 60
-            ? {
-                  text: "Good effort! A few more sessions will get you there 💪",
-                  color: "text-blue-600 dark:text-blue-400",
-              }
-            : {
-                  text: "Keep practicing! Every session makes you stronger 🏋️‍♂️",
-                  color: "text-orange-600 dark:text-orange-400",
-              };
+                ? {
+                    text: "Good effort! A few more sessions will get you there 💪",
+                    color: "text-blue-600 dark:text-blue-400",
+                }
+                : {
+                    text: "Keep practicing! Every session makes you stronger 🏋️‍♂️",
+                    color: "text-orange-600 dark:text-orange-400",
+                };
 
     const formatTime = (s: number) =>
         `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -241,7 +257,7 @@ function InterviewContent() {
     const shortDomainName = domain.split("/")[0];
 
     return (
-        <div className="max-w-5xl mx-auto px-4 py-6">
+        <div className="font-average-sans max-w-5xl mx-auto px-4 py-6">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border/60">
                 <div className="flex items-center gap-3">
@@ -369,6 +385,41 @@ function InterviewContent() {
                             </div>
                         </Card>
 
+                        {/* Adaptive Difficulty Trajectory & Progression Report */}
+                        {difficultyHistory.length > 0 && (
+                            <Card className="p-6 border border-border/50 rounded-3xl bg-card space-y-4 shadow-2xs">
+                                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                                    📈 Adaptive Difficulty Trajectory
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                                    {difficultyHistory.map((step, idx) => (
+                                        <div key={idx} className="p-3 rounded-2xl border text-center space-y-1 bg-muted/30 border-border/50">
+                                            <p className="text-[11px] text-muted-foreground font-semibold">Q{step.questionNumber}</p>
+                                            <span
+                                                className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-block ${
+                                                    step.difficulty === "Hard"
+                                                        ? "bg-rose-100 text-rose-700"
+                                                        : step.difficulty === "Medium"
+                                                        ? "bg-amber-100 text-amber-700"
+                                                        : "bg-emerald-100 text-emerald-700"
+                                                }`}
+                                            >
+                                                {step.difficulty}
+                                            </span>
+                                            <p className="text-[10px] font-bold text-foreground">{step.evaluation}</p>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {progressionReport && (
+                                    <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-xs text-blue-900 leading-relaxed mt-2">
+                                        <p className="font-bold mb-1">🤖 AI Progression Summary Report:</p>
+                                        <p className="whitespace-pre-line">{progressionReport}</p>
+                                    </div>
+                                )}
+                            </Card>
+                        )}
+
                         {/* Actions */}
                         <div className="flex items-center justify-center gap-4 pt-2">
                             <Button
@@ -402,7 +453,7 @@ function InterviewContent() {
                                     💡 Tip: Be specific and use examples from your experience for stronger answers
                                 </p>
                             </div>
-                            <InputBox onSend={handleSendMessage} disabled={isLoading} />
+                            <InputBox onSend={handleSendMessage} onSkip={handleSkipQuestion} disabled={isLoading} />
                         </div>
                     </>
                 )}

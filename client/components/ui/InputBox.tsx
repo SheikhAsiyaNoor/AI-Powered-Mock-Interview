@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 
 export interface InputboxProp {
     onSend: (message: string) => void;
+    onSkip?: () => void;
     disabled?: boolean;
 }
 
-const InputBox = ({ onSend, disabled }: InputboxProp) => {
+const InputBox = ({ onSend, onSkip, disabled }: InputboxProp) => {
     const [input, setInput] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -50,13 +51,27 @@ const InputBox = ({ onSend, disabled }: InputboxProp) => {
                 disabled={disabled}
                 className="flex-1 px-4 py-3 rounded-2xl border border-border bg-card text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50 min-h-[44px] max-h-[120px] leading-normal"
             />
-            <Button
-                onClick={handleSend}
-                disabled={disabled || !input.trim()}
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-11 px-6 font-medium cursor-pointer flex-shrink-0"
-            >
-                Send
-            </Button>
+            <div className="flex gap-2">
+                {onSkip && (
+                    <Button
+                        type="button"
+                        onClick={onSkip}
+                        disabled={disabled}
+                        variant="outline"
+                        className="rounded-2xl h-11 px-4 text-xs font-semibold text-amber-600 border-amber-300 hover:bg-amber-50 cursor-pointer"
+                    >
+                        Skip ⏭️
+                    </Button>
+                )}
+                <Button
+                    onClick={handleSend}
+                    disabled={disabled || !input.trim()}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl h-11 px-6 font-medium cursor-pointer flex-shrink-0"
+                >
+                    Send
+                </Button>
+            </div>
+
         </div>
     );
 };

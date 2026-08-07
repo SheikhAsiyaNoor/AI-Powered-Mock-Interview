@@ -4,6 +4,7 @@ export interface Message {
     id: string;
     content: string;
     isUser: boolean;
+    difficulty?: 'Easy' | 'Medium' | 'Hard';
     timestamp: Date;
 }
 
@@ -32,9 +33,24 @@ const ChatContainer = ({ messages, isLoading }: ChatContainerProps) => {
                                 : "bg-card border border-border/60 text-foreground rounded-bl-none shadow-xs"
                         }`}
                     >
-                        <p className="font-semibold text-xs mb-1 opacity-70">
-                            {message.isUser ? "You" : "AI Interviewer"}
-                        </p>
+                        <div className="flex items-center justify-between gap-4 mb-1">
+                            <p className="font-semibold text-xs opacity-70">
+                                {message.isUser ? "You" : "AI Interviewer"}
+                            </p>
+                            {!message.isUser && message.difficulty && (
+                                <span
+                                    className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        message.difficulty === "Hard"
+                                            ? "bg-rose-100 text-rose-700"
+                                            : message.difficulty === "Medium"
+                                            ? "bg-amber-100 text-amber-700"
+                                            : "bg-emerald-100 text-emerald-700"
+                                    }`}
+                                >
+                                    {message.difficulty}
+                                </span>
+                            )}
+                        </div>
                         <p className="whitespace-pre-wrap">{message.content}</p>
                     </div>
                 </div>
@@ -48,7 +64,7 @@ const ChatContainer = ({ messages, isLoading }: ChatContainerProps) => {
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
-export default ChatContainer
+export default ChatContainer;
