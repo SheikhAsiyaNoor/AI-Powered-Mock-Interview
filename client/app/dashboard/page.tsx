@@ -369,11 +369,11 @@ function DashboardContent() {
     const [showDomainSelector, setShowDomainSelector] = useState(false);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [filterDomain, setFilterDomain] = useState<string>("All");
-    const [activeTab, setActiveTab] = useState<"history" | "resume" | "analytics">("history");
+    const [activeTab, setActiveTab] = useState<"history" | "resume">("history");
 
     useEffect(() => {
         const tab = searchParams.get("tab");
-        if (tab === "history" || tab === "resume" || tab === "analytics") {
+        if (tab === "history" || tab === "resume") {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -435,6 +435,13 @@ function DashboardContent() {
 
                 <div className="flex items-center gap-3">
                     <Button
+                        onClick={() => router.push("/simulator")}
+                        variant="outline"
+                        className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs"
+                    >
+                        <span>🏢</span> Recruiter Simulator
+                    </Button>
+                    <Button
                         onClick={() => router.push("/readiness")}
                         variant="outline"
                         className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs"
@@ -450,34 +457,62 @@ function DashboardContent() {
                 </div>
             </section>
 
-            {/* AI Placement Readiness Engine Featured Card */}
-            <Card className="p-6 border border-blue-500/30 bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-purple-900/10 rounded-3xl mb-8 shadow-xs hover:border-blue-500/50 transition-all">
-                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="space-y-1">
+            {/* Featured Engine Cards (Simulator & Readiness) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                {/* AI Recruiter Simulator Card */}
+                <Card className="p-6 border border-indigo-500/30 bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-blue-900/10 rounded-3xl shadow-xs hover:border-indigo-500/50 transition-all flex flex-col justify-between space-y-4">
+                    <div className="space-y-1.5">
                         <div className="flex items-center gap-2">
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">
-                                New Feature
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-600 text-white uppercase tracking-wider">
+                                Recruiter Simulator
                             </span>
-                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
-                                AI Placement Readiness Engine
+                            <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                                Company Hiring Bars
                             </span>
                         </div>
-                        <h2 className="text-lg font-bold text-foreground">
-                            Calculate Placement Score & Personal AI Roadmap
+                        <h2 className="text-base font-bold text-foreground">
+                            Simulate Google, Amazon, Microsoft & TCS Interviews
                         </h2>
-                        <p className="text-xs text-muted-foreground max-w-xl">
-                            Evaluates resume analysis, interview performance metrics, and technical skill diagnostic quizzes. Generates custom gap analysis and roadmaps for Freshers, Internship Seekers & Experienced candidates.
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Practice with company-specific interviewer personas, difficulty calibrations, leadership principles, and receive official hiring verdicts (Strong Hire, Hire, No Hire).
+                        </p>
+                    </div>
+
+                    <Button
+                        onClick={() => router.push("/simulator")}
+                        className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md hover:brightness-110 w-fit cursor-pointer"
+                    >
+                        Explore Company Simulator →
+                    </Button>
+                </Card>
+
+                {/* AI Placement Readiness Engine Card */}
+                <Card className="p-6 border border-blue-500/30 bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-purple-900/10 rounded-3xl shadow-xs hover:border-blue-500/50 transition-all flex flex-col justify-between space-y-4">
+                    <div className="space-y-1.5">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">
+                                Readiness Engine
+                            </span>
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                Placement Analytics
+                            </span>
+                        </div>
+                        <h2 className="text-base font-bold text-foreground">
+                            Placement Readiness Score & AI Roadmap
+                        </h2>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                            Unified placement score calculated from resume analysis, mock interviews, and skill quizzes with tailored milestones for Freshers & Experienced candidates.
                         </p>
                     </div>
 
                     <Button
                         onClick={() => router.push("/readiness")}
-                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md hover:brightness-110 shrink-0 cursor-pointer"
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md hover:brightness-110 w-fit cursor-pointer"
                     >
                         Launch Readiness Dashboard →
                     </Button>
-                </div>
-            </Card>
+                </Card>
+            </div>
 
             {/* Stat Cards Grid */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -547,8 +582,8 @@ function DashboardContent() {
 
             {/* Tabs Header */}
             <section className="mt-8 border-b border-border/60">
-                <div className="flex flex-wrap gap-4 sm:gap-6">
-                    {(["history", "resume", "analytics"] as const).map((tab) => (
+                <div className="flex gap-6">
+                    {(["history", "resume"] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -558,13 +593,7 @@ function DashboardContent() {
                                     : "border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                         >
-                            <span>
-                                {tab === "history"
-                                    ? "📋 Interview History"
-                                    : tab === "resume"
-                                    ? "📄 Resume Analysis"
-                                    : "📈 Private Vercel Analytics"}
-                            </span>
+                            <span>{tab === "history" ? "📋 Interview History" : "📄 Resume Analysis"}</span>
                         </button>
                     ))}
                 </div>
@@ -703,101 +732,6 @@ function DashboardContent() {
 
             {/* Resume Analysis Tab Content */}
             {activeTab === "resume" && <ResumePanel onDomainSelect={handleSelectDomain} />}
-
-            {/* Private Vercel Analytics Tab Content */}
-            {activeTab === "analytics" && (
-                <div className="mt-6 space-y-6">
-                    <Card className="p-6 border border-border/50 rounded-3xl shadow-2xs space-y-6">
-                        {/* Header Banner */}
-                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border/50">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2">
-                                    <span className="relative flex h-2.5 w-2.5">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                                    </span>
-                                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                                        Vercel Web Analytics Active
-                                    </span>
-                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border">
-                                        🔒 Private (Admin Only)
-                                    </span>
-                                </div>
-                                <h3 className="text-xl font-bold text-foreground">
-                                    Site Traffic & Audience Analytics
-                                </h3>
-                                <p className="text-xs text-muted-foreground max-w-2xl">
-                                    Privacy-friendly visitor tracking and Core Web Vitals telemetry powered by <code>@vercel/analytics</code>. This telemetry is collected seamlessly in the background and only accessible to you.
-                                </p>
-                            </div>
-
-                            <a
-                                href="https://vercel.com/dashboard/analytics"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all shrink-0 cursor-pointer"
-                            >
-                                Open Vercel Analytics Dashboard ↗
-                            </a>
-                        </div>
-
-                        {/* Telemetry Feature Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
-                                        <span>👥</span> Traffic & Visitors
-                                    </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600">
-                                        Active
-                                    </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Tracks total page views, unique daily visitors, and session duration without invasive cookies.
-                                </p>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
-                                        <span>⚡</span> Core Web Vitals
-                                    </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600">
-                                        Automated
-                                    </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Monitors real user performance metrics including Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Layout Shift (CLS).
-                                </p>
-                            </div>
-
-                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
-                                        <span>🌍</span> Audience Insights
-                                    </span>
-                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/10 text-purple-600">
-                                        Enabled
-                                    </span>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Provides geographic location breakdowns, referring domains, operating systems, and device types.
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Integration Details Callout */}
-                        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 text-xs text-blue-900 dark:text-blue-200 space-y-2">
-                            <div className="flex items-center gap-2 font-bold text-sm">
-                                <span>✅</span> Integration Verified: <code>&lt;Analytics /&gt;</code> Added to Root Layout
-                            </div>
-                            <p className="leading-relaxed">
-                                Once your deployment is updated on Vercel, live page visits and visitor counts begin streaming into your Vercel Analytics console within 30 seconds. Visitors browsing your site will not see any tracking banners or visible counters.
-                            </p>
-                        </div>
-                    </Card>
-                </div>
-            )}
 
             {/* Domain Selector Modal */}
             {showDomainSelector && (

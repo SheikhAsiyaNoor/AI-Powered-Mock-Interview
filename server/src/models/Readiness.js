@@ -4,12 +4,11 @@ const RoadmapItemSchema = new mongoose.Schema({
     id: { type: String, required: true },
     type: {
         type: String,
-        enum: ["technology", "project", "certification", "topic"],
-        required: true
+        default: "topic"
     },
     title: { type: String, required: true },
     description: { type: String, required: true },
-    priority: { type: String, enum: ["High", "Medium", "Low"], default: "Medium" },
+    priority: { type: String, default: "Medium" },
     estimatedTime: { type: String, default: "1-2 weeks" },
     completed: { type: Boolean, default: false },
     completedAt: { type: Date }

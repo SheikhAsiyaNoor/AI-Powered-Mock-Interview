@@ -297,35 +297,29 @@ export default function ReadinessPage() {
 
     if (authLoading || loading) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
-                <Navbar />
-                <div className="flex-1 flex flex-col items-center justify-center space-y-4 p-8">
-                    <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                    <p className="text-sm text-muted-foreground font-medium animate-pulse">
-                        Evaluating Placement Readiness & Generating AI Roadmap...
-                    </p>
-                </div>
+            <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4 p-8">
+                <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-sm text-muted-foreground font-medium animate-pulse">
+                    Evaluating Placement Readiness & Generating AI Roadmap...
+                </p>
             </div>
         );
     }
 
     if (!report) {
         return (
-            <div className="min-h-screen bg-background flex flex-col">
-                <Navbar />
-                <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-                    <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-foreground">No Readiness Data Available</h2>
-                    <p className="text-muted-foreground mt-2 text-sm">
-                        Take a mock interview or upload a resume to calculate your placement readiness.
-                    </p>
-                    <button
-                        onClick={() => fetchReadinessReport()}
-                        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition"
-                    >
-                        Try Again
-                    </button>
-                </div>
+            <div className="max-w-4xl mx-auto py-16 px-4 text-center">
+                <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+                <h2 className="text-xl font-bold text-foreground">No Readiness Data Available</h2>
+                <p className="text-muted-foreground mt-2 text-sm">
+                    Take a mock interview or upload a resume to calculate your placement readiness.
+                </p>
+                <button
+                    onClick={() => fetchReadinessReport()}
+                    className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition cursor-pointer"
+                >
+                    Try Again
+                </button>
             </div>
         );
     }
@@ -351,8 +345,6 @@ export default function ReadinessPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
-            <Navbar />
-
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
                 {/* HERO HEADER SECTION */}
                 <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-blue-900/90 via-indigo-900/90 to-purple-950/90 text-white p-6 sm:p-8 border border-white/10 shadow-2xl">

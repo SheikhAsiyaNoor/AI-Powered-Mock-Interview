@@ -7,6 +7,7 @@ const authRoutes = require("./routes/auth");
 const interviewRoutes = require("./routes/interview");
 const resumeRoutes = require("./routes/resume");
 const readinessRoutes = require("./routes/readiness");
+const simulatorRoutes = require("./routes/simulator");
 
 connectDB();
 const app = express();
@@ -34,6 +35,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/interviews", interviewRoutes);
 app.use("/api/resume", resumeRoutes);
 app.use("/api/readiness", readinessRoutes);
+app.use("/api/simulator", simulatorRoutes);
 
 const PORT = process.env.PORT || 5000;
 
