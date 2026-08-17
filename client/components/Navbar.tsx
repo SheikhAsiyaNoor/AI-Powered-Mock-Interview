@@ -25,6 +25,7 @@ const Navbar = () => {
     const navLinks = isLoggedIn
         ? [
               { href: "/dashboard", label: "Dashboard", icon: "⚡" },
+              { href: "/readiness", label: "Readiness Engine", icon: "🚀" },
               { href: "/practice", label: "Practice", icon: "🎯" },
               { href: "/dashboard?tab=history", label: "My Sessions", icon: "📊" },
           ]

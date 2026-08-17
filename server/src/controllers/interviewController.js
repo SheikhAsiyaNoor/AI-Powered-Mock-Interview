@@ -24,7 +24,7 @@ const startInterview = async (req, res) => {
         let firstQuestion = `What are the key concepts and best practices in ${domain}?`;
         try {
             const completion = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-20b",
                 messages: [
                     { role: "system", content: systemPrompt(domain, initialDifficulty, []) },
                     {
@@ -87,7 +87,7 @@ const submitAnswer = async (req, res) => {
         } else {
             try {
                 const evalResponse = await groq.chat.completions.create({
-                    model: "llama-3.3-70b-versatile",
+                    model: "openai/gpt-oss-20b",
                     messages: [
                         {
                             role: "user",
@@ -154,7 +154,7 @@ const submitAnswer = async (req, res) => {
 
             try {
                 const reportRes = await groq.chat.completions.create({
-                    model: "llama-3.3-70b-versatile",
+                    model: "openai/gpt-oss-20b",
                     messages: [
                         {
                             role: "user",
@@ -194,7 +194,7 @@ const submitAnswer = async (req, res) => {
         let nextQuestion = `How would you approach handling performance optimizations and edge cases in a ${domain} project?`;
         try {
             const nextQuestionResponse = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-20b",
                 messages: [
                     { role: "system", content: systemPrompt(domain, nextDiff, interview.askedQuestions) },
                     {

@@ -5,3 +5,5 @@ node_modules
 .next
 dist
 build
+walkthrough.md
+implementation_plan.md

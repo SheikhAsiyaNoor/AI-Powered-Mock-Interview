@@ -257,7 +257,7 @@ function InterviewContent() {
     const shortDomainName = domain.split("/")[0];
 
     return (
-        <div className="font-average-sans max-w-5xl mx-auto px-4 py-6">
+        <div className="font-sans max-w-5xl mx-auto px-4 py-6">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border/60">
                 <div className="flex items-center gap-3">

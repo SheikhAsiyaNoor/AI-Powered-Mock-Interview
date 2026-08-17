@@ -78,7 +78,7 @@ const analyzeResume = async (req, res) => {
         let analysis = null;
         try {
             const response = await groq.chat.completions.create({
-                model: "llama-3.3-70b-versatile",
+                model: "openai/gpt-oss-20b",
                 messages: [{ role: "user", content: prompt }],
             });
             const raw = response.choices[0]?.message?.content || "{}";
@@ -97,17 +97,22 @@ const analyzeResume = async (req, res) => {
                 skillsDetected: ["JavaScript", "React", "Node.js", "Python", "REST APIs"],
                 strengths: ["Full-stack application development", "Modern framework proficiency", "Agile team collaboration"],
                 recommendedDomains: [
-                    { label: "JavaScript/Node.js", reason: "Strong alignment with full-stack web technologies", confidence: 0.95 },
-                    { label: "React", reason: "Solid foundation in component-based UI architecture", confidence: 0.85 },
-                    { label: "System Design", reason: "Good understanding of software architecture principles", confidence: 0.75 }
+                    { label: "JavaScript/Node.js", reason: "Strong alignment with full-stack web technologies", confidence: 95 },
+                    { label: "React", reason: "Solid foundation in component-based UI architecture", confidence: 85 },
+                    { label: "System Design", reason: "Good understanding of software architecture principles", confidence: 75 }
                 ]
             };
         }
 
         if (analysis.recommendedDomains) {
-            analysis.recommendedDomains = analysis.recommendedDomains.filter((d) =>
-                DOMAINS.includes(d.label)
-            );
+            analysis.recommendedDomains = analysis.recommendedDomains
+                .filter((d) => DOMAINS.includes(d.label))
+                .map((d) => ({
+                    ...d,
+                    confidence: typeof d.confidence === "number"
+                        ? (d.confidence <= 1 ? Math.round(d.confidence * 100) : Math.min(100, Math.max(10, Math.round(d.confidence))))
+                        : 85
+                }));
         }
 
         res.status(200).json({ analysis });

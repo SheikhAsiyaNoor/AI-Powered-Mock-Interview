@@ -314,17 +314,26 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                         </div>
 
                                         <div className="flex items-center gap-3 flex-shrink-0">
-                                            <div className="w-20 hidden sm:block">
-                                                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full bg-blue-600 rounded-full"
-                                                        style={{ width: `${(rec.confidence || 0.9) * 100}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                            <span className="text-xs font-bold text-blue-600">
-                                                {Math.round((rec.confidence || 0.9) * 100)}%
-                                            </span>
+                                            {(() => {
+                                                const confVal = typeof rec.confidence === "number"
+                                                    ? (rec.confidence <= 1 ? Math.round(rec.confidence * 100) : Math.min(100, Math.max(10, Math.round(rec.confidence))))
+                                                    : 85;
+                                                return (
+                                                    <>
+                                                        <div className="w-20 hidden sm:block">
+                                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                                                                <div
+                                                                    className="h-full bg-blue-600 rounded-full"
+                                                                    style={{ width: `${confVal}%` }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-xs font-bold text-blue-600">
+                                                            {confVal}%
+                                                        </span>
+                                                    </>
+                                                );
+                                            })()}
                                         </div>
                                     </div>
                                 ))}
@@ -360,11 +369,11 @@ function DashboardContent() {
     const [showDomainSelector, setShowDomainSelector] = useState(false);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [filterDomain, setFilterDomain] = useState<string>("All");
-    const [activeTab, setActiveTab] = useState<"history" | "resume">("history");
+    const [activeTab, setActiveTab] = useState<"history" | "resume" | "analytics">("history");
 
     useEffect(() => {
         const tab = searchParams.get("tab");
-        if (tab === "history" || tab === "resume") {
+        if (tab === "history" || tab === "resume" || tab === "analytics") {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -414,9 +423,9 @@ function DashboardContent() {
     const userName = user?.name ? user.name.split(" ")[0] : "User";
 
     return (
-        <div className="font-average-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header Section */}
-            <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+            <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
                         <span>👋</span> Welcome back, <span className="font-semibold text-foreground">{userName}</span>
@@ -424,13 +433,51 @@ function DashboardContent() {
                     <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Your Dashboard</h1>
                 </div>
 
-                <Button
-                    onClick={() => setShowDomainSelector(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
-                >
-                    <span>⚡</span> New Interview
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        onClick={() => router.push("/readiness")}
+                        variant="outline"
+                        className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs"
+                    >
+                        <span>🚀</span> Readiness Engine
+                    </Button>
+                    <Button
+                        onClick={() => setShowDomainSelector(true)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
+                    >
+                        <span>⚡</span> New Interview
+                    </Button>
+                </div>
             </section>
+
+            {/* AI Placement Readiness Engine Featured Card */}
+            <Card className="p-6 border border-blue-500/30 bg-gradient-to-r from-blue-900/10 via-indigo-900/10 to-purple-900/10 rounded-3xl mb-8 shadow-xs hover:border-blue-500/50 transition-all">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">
+                                New Feature
+                            </span>
+                            <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                                AI Placement Readiness Engine
+                            </span>
+                        </div>
+                        <h2 className="text-lg font-bold text-foreground">
+                            Calculate Placement Score & Personal AI Roadmap
+                        </h2>
+                        <p className="text-xs text-muted-foreground max-w-xl">
+                            Evaluates resume analysis, interview performance metrics, and technical skill diagnostic quizzes. Generates custom gap analysis and roadmaps for Freshers, Internship Seekers & Experienced candidates.
+                        </p>
+                    </div>
+
+                    <Button
+                        onClick={() => router.push("/readiness")}
+                        className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl text-xs shadow-md hover:brightness-110 shrink-0 cursor-pointer"
+                    >
+                        Launch Readiness Dashboard →
+                    </Button>
+                </div>
+            </Card>
 
             {/* Stat Cards Grid */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -489,8 +536,7 @@ function DashboardContent() {
                             <p className="text-xs text-muted-foreground">Last {recentScores.length} sessions</p>
                         </div>
                         <div className="flex items-end gap-3">
-                            <MiniSparkline scores={recentScores} />
-                            <div className="text-right">
+                        <div className="text-right">
                                 <p className="text-xs text-muted-foreground">Latest</p>
                                 <p className="text-sm font-bold text-blue-600">{recentScores[recentScores.length - 1]}%</p>
                             </div>
@@ -501,8 +547,8 @@ function DashboardContent() {
 
             {/* Tabs Header */}
             <section className="mt-8 border-b border-border/60">
-                <div className="flex gap-6">
-                    {(["history", "resume"] as const).map((tab) => (
+                <div className="flex flex-wrap gap-4 sm:gap-6">
+                    {(["history", "resume", "analytics"] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -512,7 +558,13 @@ function DashboardContent() {
                                     : "border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                         >
-                            <span>{tab === "history" ? "📋 Interview History" : "📄 Resume Analysis"}</span>
+                            <span>
+                                {tab === "history"
+                                    ? "📋 Interview History"
+                                    : tab === "resume"
+                                    ? "📄 Resume Analysis"
+                                    : "📈 Private Vercel Analytics"}
+                            </span>
                         </button>
                     ))}
                 </div>
@@ -557,52 +609,47 @@ function DashboardContent() {
                                 </Card>
                             ))}
                         </div>
-                    ) : filtered.length === 0 && interviews.length === 0 ? (
-                        <Card className="p-12 text-center border border-border/50 rounded-3xl shadow-2xs">
-                            <div className="max-w-md mx-auto flex flex-col items-center gap-3">
-                                <div className="text-4xl mb-1">📝</div>
-                                <h3 className="text-xl font-bold text-foreground">No sessions yet</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Start a practice interview or upload your resume for personalised domain suggestions.
-                                </p>
-                                <div className="flex items-center justify-center gap-3 pt-4">
-                                    <Button
-                                        onClick={() => setShowDomainSelector(true)}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6 py-2.5 text-sm font-medium cursor-pointer"
-                                    >
-                                        ⚡ Start Interview
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setActiveTab("resume")}
-                                        className="rounded-full px-6 py-2.5 text-sm font-medium border-border text-foreground hover:bg-muted cursor-pointer"
-                                    >
-                                        📄 Analyse Resume
-                                    </Button>
-                                </div>
-                            </div>
-                        </Card>
                     ) : filtered.length === 0 ? (
-                        <Card className="p-8 text-center border border-border/50 rounded-2xl">
-                            <p className="text-muted-foreground text-sm">No sessions for "{filterDomain}"</p>
-                        </Card>
+                        <div className="text-center py-16 border-2 border-dashed border-border/60 rounded-3xl p-8 bg-muted/20">
+                            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-3xl mx-auto mb-4">
+                                🎯
+                            </div>
+                            <h3 className="text-base font-bold text-foreground mb-1">
+                                {filterDomain === "All" ? "No interview sessions yet" : `No sessions for ${filterDomain}`}
+                            </h3>
+                            <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-6">
+                                {filterDomain === "All"
+                                    ? "Start your first AI mock interview to get tailored feedback, score analytics, and placement readiness tracking."
+                                    : "You haven't practiced in this domain yet. Take a session to evaluate your skills."}
+                            </p>
+                            <Button
+                                onClick={() => setShowDomainSelector(true)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-full font-semibold cursor-pointer shadow-xs"
+                            >
+                                Start Practice Session ⚡
+                            </Button>
+                        </div>
                     ) : (
-                        <div className="space-y-3">
-                            {[...filtered].reverse().map((interview, index) => {
-                                const meta = INTERVIEW_DOMAINS.find((d) => d.label === interview.topic);
+                        <div className="space-y-4">
+                            {filtered.map((interview) => {
+                                const domainInfo = INTERVIEW_DOMAINS.find((d) => d.label === interview.topic);
                                 return (
-                                    <Card key={interview.id || interview._id || index} className="p-5 border border-border/50 rounded-2xl shadow-2xs hover:shadow-md transition-shadow">
+                                    <Card
+                                        key={interview.id}
+                                        className="p-5 border border-border/50 bg-card rounded-2xl shadow-2xs hover:border-blue-600/40 hover:shadow-md transition-all cursor-pointer"
+                                        onClick={() => setSelectedInterview(interview)}
+                                    >
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 rounded-2xl bg-amber-400/20 text-amber-600 flex items-center justify-center text-2xl flex-shrink-0">
-                                                    {meta?.icon || "🎯"}
+                                            <div className="flex items-center gap-3.5">
+                                                <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-2xl flex-shrink-0">
+                                                    {domainInfo?.icon || "🎯"}
                                                 </div>
                                                 <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="font-bold text-foreground">{interview.topic}</p>
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <p className="text-base font-bold text-foreground">{interview.topic}</p>
                                                         <ScoreBadge score={interview.score} />
                                                     </div>
-                                                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                                    <p className="text-xs text-muted-foreground flex items-center gap-2">
                                                         <span>
                                                             {new Date(interview.date).toLocaleDateString("en-IN", {
                                                                 day: "numeric",
@@ -610,30 +657,36 @@ function DashboardContent() {
                                                                 year: "numeric",
                                                             })}
                                                         </span>
-                                                        <span>•</span>
-                                                        <span>{interview.duration || 3}m duration</span>
-                                                    </div>
+                                                        <span>·</span>
+                                                        <span>{interview.duration || 3} mins duration</span>
+                                                    </p>
                                                 </div>
                                             </div>
 
-                                            <div className="flex items-center gap-6 justify-between sm:justify-end">
-                                                <div className="text-right">
-                                                    <p className="text-xs text-muted-foreground">Score</p>
-                                                    <p className="text-lg font-bold text-foreground">{interview.score}%</p>
+                                            <div className="flex items-center justify-between sm:justify-end gap-4 pt-3 sm:pt-0 border-t sm:border-t-0 border-border/40">
+                                                <div className="text-right hidden sm:block">
+                                                    <p className="text-xs text-muted-foreground">Session Score</p>
+                                                    <p className="text-lg font-black text-foreground">{interview.score}%</p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <Button
                                                         variant="outline"
                                                         size="sm"
-                                                        onClick={() => setSelectedInterview(interview)}
-                                                        className="rounded-xl cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedInterview(interview);
+                                                        }}
+                                                        className="rounded-xl text-xs font-semibold cursor-pointer"
                                                     >
-                                                        Details
+                                                        Review Feedback
                                                     </Button>
                                                     <Button
                                                         size="sm"
-                                                        onClick={() => handleSelectDomain(interview.topic)}
-                                                        className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleSelectDomain(interview.topic);
+                                                        }}
+                                                        className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold cursor-pointer"
                                                     >
                                                         Retake
                                                     </Button>
@@ -650,6 +703,101 @@ function DashboardContent() {
 
             {/* Resume Analysis Tab Content */}
             {activeTab === "resume" && <ResumePanel onDomainSelect={handleSelectDomain} />}
+
+            {/* Private Vercel Analytics Tab Content */}
+            {activeTab === "analytics" && (
+                <div className="mt-6 space-y-6">
+                    <Card className="p-6 border border-border/50 rounded-3xl shadow-2xs space-y-6">
+                        {/* Header Banner */}
+                        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-border/50">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                    <span className="relative flex h-2.5 w-2.5">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                                    </span>
+                                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                                        Vercel Web Analytics Active
+                                    </span>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border">
+                                        🔒 Private (Admin Only)
+                                    </span>
+                                </div>
+                                <h3 className="text-xl font-bold text-foreground">
+                                    Site Traffic & Audience Analytics
+                                </h3>
+                                <p className="text-xs text-muted-foreground max-w-2xl">
+                                    Privacy-friendly visitor tracking and Core Web Vitals telemetry powered by <code>@vercel/analytics</code>. This telemetry is collected seamlessly in the background and only accessible to you.
+                                </p>
+                            </div>
+
+                            <a
+                                href="https://vercel.com/dashboard/analytics"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-md transition-all shrink-0 cursor-pointer"
+                            >
+                                Open Vercel Analytics Dashboard ↗
+                            </a>
+                        </div>
+
+                        {/* Telemetry Feature Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
+                                        <span>👥</span> Traffic & Visitors
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-600">
+                                        Active
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Tracks total page views, unique daily visitors, and session duration without invasive cookies.
+                                </p>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
+                                        <span>⚡</span> Core Web Vitals
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600">
+                                        Automated
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Monitors real user performance metrics including Largest Contentful Paint (LCP), Interaction to Next Paint (INP), and Layout Shift (CLS).
+                                </p>
+                            </div>
+
+                            <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-base font-bold text-foreground flex items-center gap-2">
+                                        <span>🌍</span> Audience Insights
+                                    </span>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-500/10 text-purple-600">
+                                        Enabled
+                                    </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Provides geographic location breakdowns, referring domains, operating systems, and device types.
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Integration Details Callout */}
+                        <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/40 text-xs text-blue-900 dark:text-blue-200 space-y-2">
+                            <div className="flex items-center gap-2 font-bold text-sm">
+                                <span>✅</span> Integration Verified: <code>&lt;Analytics /&gt;</code> Added to Root Layout
+                            </div>
+                            <p className="leading-relaxed">
+                                Once your deployment is updated on Vercel, live page visits and visitor counts begin streaming into your Vercel Analytics console within 30 seconds. Visitors browsing your site will not see any tracking banners or visible counters.
+                            </p>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {/* Domain Selector Modal */}
             {showDomainSelector && (
