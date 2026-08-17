@@ -8,6 +8,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+
 // Helper fallback data generator for candidate levels
 const getDefaultGapAndRoadmap = (candidateLevel, targetRole, domainScores) => {
     const isFresher = candidateLevel === "Fresher";
@@ -255,7 +257,7 @@ const getReadinessReport = async (req, res) => {
                 `.trim();
 
                 const response = await groq.chat.completions.create({
-                    model: "openai/gpt-oss-20b",
+                    model: GROQ_MODEL,
                     messages: [{ role: "user", content: prompt }],
                     response_format: { type: "json_object" },
                     temperature: 0.4
@@ -496,7 +498,7 @@ const generateSkillQuiz = async (req, res) => {
         let quizData = null;
         try {
             const response = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [{ role: "user", content: prompt }],
                 response_format: { type: "json_object" },
                 temperature: 0.5

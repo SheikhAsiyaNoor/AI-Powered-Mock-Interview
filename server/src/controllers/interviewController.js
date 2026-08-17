@@ -6,6 +6,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+
 const systemPrompt = (domain, difficulty, askedQuestionsList = []) => `
 You are a senior technical interviewer conducting a mock interview for a ${domain} developer role. 
 Current Question Difficulty Level: ${difficulty}
@@ -24,7 +26,7 @@ const startInterview = async (req, res) => {
         let firstQuestion = `What are the key concepts and best practices in ${domain}?`;
         try {
             const completion = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [
                     { role: "system", content: systemPrompt(domain, initialDifficulty, []) },
                     {
@@ -61,6 +63,7 @@ const submitAnswer = async (req, res) => {
             answer,
             domain = "General",
             questionsAnswered = 0,
+            isSkipped = false,
         } = req.body;
 
         if (!answer || typeof answer !== "string" || !answer.trim()) {
@@ -87,7 +90,7 @@ const submitAnswer = async (req, res) => {
         } else {
             try {
                 const evalResponse = await groq.chat.completions.create({
-                    model: "openai/gpt-oss-20b",
+                    model: GROQ_MODEL,
                     messages: [
                         {
                             role: "user",
@@ -154,7 +157,7 @@ const submitAnswer = async (req, res) => {
 
             try {
                 const reportRes = await groq.chat.completions.create({
-                    model: "openai/gpt-oss-20b",
+                    model: GROQ_MODEL,
                     messages: [
                         {
                             role: "user",
@@ -194,7 +197,7 @@ const submitAnswer = async (req, res) => {
         let nextQuestion = `How would you approach handling performance optimizations and edge cases in a ${domain} project?`;
         try {
             const nextQuestionResponse = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [
                     { role: "system", content: systemPrompt(domain, nextDiff, interview.askedQuestions) },
                     {

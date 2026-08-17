@@ -7,6 +7,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+
 // GET /api/simulator/companies - List all company simulation profiles
 const getCompanies = async (req, res) => {
     try {
@@ -56,7 +58,7 @@ const startCompanyInterview = async (req, res) => {
 
         try {
             const completion = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [
                     {
                         role: "system",
@@ -146,7 +148,7 @@ const submitCompanyAnswer = async (req, res) => {
                 `.trim();
 
                 const response = await groq.chat.completions.create({
-                    model: "openai/gpt-oss-20b",
+                    model: GROQ_MODEL,
                     messages: [{ role: "user", content: evalPrompt }],
                     response_format: { type: "json_object" },
                     temperature: 0.3
@@ -220,7 +222,7 @@ const submitCompanyAnswer = async (req, res) => {
 
             try {
                 const reportRes = await groq.chat.completions.create({
-                    model: "openai/gpt-oss-20b",
+                    model: GROQ_MODEL,
                     messages: [
                         {
                             role: "user",
@@ -302,7 +304,7 @@ const submitCompanyAnswer = async (req, res) => {
 
         try {
             const nextQuestionResponse = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [
                     {
                         role: "system",

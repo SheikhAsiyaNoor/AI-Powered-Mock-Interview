@@ -6,7 +6,7 @@ const API_BASE_URL = rawUrl.replace(/\/+$/, "");
 
 const axiosInstance = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 35000,
     headers: {
         "Content-Type": "application/json",
     },

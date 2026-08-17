@@ -5,6 +5,8 @@ const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
 });
 
+const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
+
 const DOMAINS = [
     "JavaScript/Node.js",
     "React",
@@ -19,8 +21,15 @@ const DOMAINS = [
 async function extractTextFromPDF(buffer) {
     try {
         if (!buffer || buffer.length === 0) return "";
-        const data = await pdfParse(buffer);
-        return data && data.text ? data.text : "";
+        let parser = pdfParse;
+        if (typeof parser !== "function" && parser && typeof parser.default === "function") {
+            parser = parser.default;
+        }
+        if (typeof parser === "function") {
+            const data = await parser(buffer);
+            return data && data.text ? data.text : "";
+        }
+        return buffer.toString("utf-8");
     } catch (err) {
         console.error("PDF Parsing error:", err.message || err);
         return "";
@@ -78,7 +87,7 @@ const analyzeResume = async (req, res) => {
         let analysis = null;
         try {
             const response = await groq.chat.completions.create({
-                model: "openai/gpt-oss-20b",
+                model: GROQ_MODEL,
                 messages: [{ role: "user", content: prompt }],
             });
             const raw = response.choices[0]?.message?.content || "{}";
