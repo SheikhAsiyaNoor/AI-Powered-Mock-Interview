@@ -154,9 +154,12 @@ export default function ReadinessPage() {
         }
     }, [isLoggedIn, authLoading, router]);
 
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
     const fetchReadinessReport = async (level?: string) => {
         try {
             setLoading(true);
+            setErrorMessage(null);
             const url = level ? `/api/readiness?level=${encodeURIComponent(level)}` : "/api/readiness";
             const res = await api.get(url);
             if (res.data && res.data.readiness) {
@@ -168,109 +171,11 @@ export default function ReadinessPage() {
                 }
                 return;
             }
-        } catch (err) {
-            console.warn("Failed to fetch readiness report from backend, using baseline placement profile:", err);
-            // Default baseline profile
-            const targetLevel = (level as any) || "Fresher";
-            const fallback: ReadinessReport = {
-                candidateLevel: targetLevel,
-                targetRole: "Software Engineer",
-                overallScore: 72,
-                category: "High Potential Candidate",
-                breakdown: {
-                    resumeScore: 78,
-                    interviewScore: 70,
-                    skillScore: 68
-                },
-                scoringConfig: {
-                    resumeWeight: 30,
-                    interviewWeight: 50,
-                    skillWeight: 20,
-                    placementReadyThreshold: 80,
-                    highPotentialThreshold: 65
-                },
-                gapAnalysis: {
-                    weakTechnicalAreas: [
-                        {
-                            topic: "System Concurrency & Thread Safety",
-                            severity: "Medium",
-                            description: "Needs deeper understanding of race conditions and locks.",
-                            actionItem: "Implement async queue worker with Redis and BullMQ."
-                        },
-                        {
-                            topic: "Database Indexing & Query Profiling",
-                            severity: "Low",
-                            description: "Compound index strategies require hands-on practice.",
-                            actionItem: "Run EXPLAIN ANALYZE on complex SQL joins."
-                        }
-                    ],
-                    communicationGaps: [
-                        {
-                            aspect: "STAR Method Articulation",
-                            observation: "Answers could provide clearer measurable metrics.",
-                            suggestion: "Quantify latency reductions and user impact in percentages."
-                        }
-                    ],
-                    missingIndustrySkills: [
-                        {
-                            skill: "Docker & Containerization",
-                            importance: "Recommended",
-                            reason: "Essential for modern CI/CD cloud deployments."
-                        }
-                    ]
-                },
-                roadmap: [
-                    {
-                        id: "tech_1",
-                        type: "technology",
-                        title: "Master Redis Caching & Pub/Sub",
-                        description: "Learn caching patterns, TTL strategies, and atomic transactions.",
-                        priority: "High",
-                        estimatedTime: "1-2 weeks",
-                        completed: false
-                    },
-                    {
-                        id: "proj_1",
-                        type: "project",
-                        title: "Full-Stack Microservices Architecture",
-                        description: "Build an event-driven system with API Gateway and Docker Compose.",
-                        priority: "High",
-                        estimatedTime: "3 weeks",
-                        completed: false
-                    },
-                    {
-                        id: "cert_1",
-                        type: "certification",
-                        title: "AWS Certified Cloud Practitioner or Docker Associate",
-                        description: "Demonstrate cloud infrastructure competency.",
-                        priority: "Medium",
-                        estimatedTime: "2 weeks",
-                        completed: false
-                    },
-                    {
-                        id: "topic_1",
-                        type: "topic",
-                        title: "Dynamic Programming & Graph Traversal",
-                        description: "Practice topological sort, shortest paths (Dijkstra), and DP memoization.",
-                        priority: "Medium",
-                        estimatedTime: "1 week",
-                        completed: false
-                    }
-                ],
-                history: [
-                    {
-                        timestamp: new Date().toISOString(),
-                        overallScore: 72,
-                        resumeScore: 78,
-                        interviewScore: 70,
-                        skillScore: 68,
-                        category: "High Potential Candidate",
-                        candidateLevel: targetLevel
-                    }
-                ],
-                lastEvaluatedAt: new Date().toISOString()
-            };
-            setReport(fallback);
+            throw new Error("No readiness data returned from server.");
+        } catch (err: any) {
+            console.error("Failed to fetch readiness report:", err);
+            setErrorMessage(err?.response?.data?.message || err.message || "Unable to connect to placement readiness server.");
+            setReport(null);
         } finally {
             setLoading(false);
         }
@@ -410,15 +315,17 @@ export default function ReadinessPage() {
 
     if (!report) {
         return (
-            <div className="max-w-4xl mx-auto py-16 px-4 text-center">
-                <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-foreground">No Readiness Data Available</h2>
-                <p className="text-muted-foreground mt-2 text-sm">
-                    Take a mock interview or upload a resume to calculate your placement readiness.
+            <div className="max-w-4xl mx-auto py-16 px-4 text-center space-y-3">
+                <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-2" />
+                <h2 className="text-xl font-bold text-foreground">
+                    {errorMessage ? "Error Loading Readiness Report" : "No Readiness Data Available"}
+                </h2>
+                <p className="text-muted-foreground text-xs max-w-md mx-auto">
+                    {errorMessage || "Take a mock interview or upload a resume to calculate your placement readiness."}
                 </p>
                 <button
                     onClick={() => fetchReadinessReport()}
-                    className="mt-6 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 transition cursor-pointer"
+                    className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition cursor-pointer"
                 >
                     Try Again
                 </button>

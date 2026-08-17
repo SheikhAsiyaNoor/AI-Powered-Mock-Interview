@@ -222,6 +222,8 @@ export default function SimulatorHubPage() {
     const [selectedRound, setSelectedRound] = useState<string>("");
     const [startingSession, setStartingSession] = useState(false);
 
+    const [error, setError] = useState<string | null>(null);
+
     useEffect(() => {
         if (!authLoading && !isLoggedIn) {
             router.push("/login");
@@ -236,12 +238,14 @@ export default function SimulatorHubPage() {
     const fetchCompanies = async () => {
         try {
             setLoading(true);
+            setError(null);
             const res = await api.get("/api/simulator/companies");
             if (res.data && res.data.companies) {
                 setCompanies(res.data.companies);
             }
-        } catch (err) {
+        } catch (err: any) {
             console.error("Failed to fetch companies:", err);
+            setError(err?.response?.data?.message || err.message || "Failed to load company profiles from server.");
         } finally {
             setLoading(false);
         }
@@ -266,37 +270,11 @@ export default function SimulatorHubPage() {
                 router.push(`/simulator/${res.data.sessionId}`);
                 return;
             }
-        } catch (err) {
-            console.warn("Backend API unavailable, switching to dynamic simulation mode:", err);
-            // Dynamic Client Fallback Session
-            const mockId = `sim_${Date.now()}`;
-            const firstQ = `Welcome to the ${selectedCompany.name} ${selectedRound} for a ${selectedDomain} position. Can you walk me through your engineering approach to designing and optimizing a high-traffic ${selectedDomain} service for reliability and low latency?`;
-            
-            const fallbackSession = {
-                _id: mockId,
-                company: selectedCompany.name,
-                roundType: selectedRound,
-                domain: selectedDomain,
-                currDifficulty: selectedCompany.difficultyLevel.includes("Hard") ? "Medium" : "Easy",
-                score: 0,
-                questionsAnswered: 0,
-                messages: [
-                    {
-                        role: "ai",
-                        content: firstQ,
-                        difficulty: "Medium",
-                        timeStamp: new Date().toISOString()
-                    }
-                ],
-                askedQuestions: [firstQ],
-                difficultyHistory: [],
-                isComplete: false
-            };
-
-            if (typeof window !== "undefined") {
-                localStorage.setItem(`mock_sim_${mockId}`, JSON.stringify(fallbackSession));
-            }
-            router.push(`/simulator/${mockId}`);
+            throw new Error("No session ID returned from backend.");
+        } catch (err: any) {
+            console.error("Failed to start company simulation:", err);
+            const errMsg = err?.response?.data?.message || err.message || "Failed to connect to backend simulation server.";
+            alert(`Error starting simulation: ${errMsg}`);
         } finally {
             setStartingSession(false);
         }
