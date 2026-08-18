@@ -18,8 +18,55 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "AI Mock Interview | Placement Readiness Engine",
-  description: "AI-Powered Mock Interview Platform & Placement Readiness Engine",
+  metadataBase: new URL("https://ai-powered-mock-interview-gules.vercel.app"),
+  title: {
+    default: "AI Mock Interview | Placement Readiness Engine",
+    template: "%s | AI Mock Interview",
+  },
+  description:
+    "Master technical & behavioral interviews with AI-powered simulations, real-time speech feedback, resume analysis, and adaptive coding challenges.",
+  keywords: [
+    "AI mock interview",
+    "technical interview prep",
+    "coding interview practice",
+    "placement readiness",
+    "behavioral interview AI",
+    "resume analyzer",
+    "interview simulation",
+    "software engineering interview",
+  ],
+  authors: [{ name: "AI Mock Interview Team" }],
+  creator: "AI Mock Interview",
+  publisher: "AI Mock Interview",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://ai-powered-mock-interview-gules.vercel.app",
+    siteName: "AI Mock Interview Platform",
+    title: "AI Mock Interview | Placement Readiness Engine",
+    description:
+      "Practice tech interviews with real-time AI feedback, tailored question banks, resume evaluation, and peer challenge arena.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Mock Interview | Placement Readiness Engine",
+    description:
+      "Master technical & behavioral interviews with real-time AI feedback and personalized preparation plans.",
+  },
+  alternates: {
+    canonical: "https://ai-powered-mock-interview-gules.vercel.app",
+  },
 };
 
 export default function RootLayout({
@@ -27,8 +74,30 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "AI Mock Interview Platform",
+    url: "https://ai-powered-mock-interview-gules.vercel.app",
+    description:
+      "AI-Powered Mock Interview Platform & Placement Readiness Engine for students and job seekers.",
+    applicationCategory: "EducationalApplication",
+    operatingSystem: "All",
+    offers: {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+  };
+
   return (
     <html lang="en" className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-blue-500 selection:text-white">
         <AuthProvider>
           <Navbar />
@@ -39,3 +108,4 @@ export default function RootLayout({
     </html>
   );
 }
+
