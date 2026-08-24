@@ -106,8 +106,8 @@ const register = async (req, res) => {
         const verificationToken = crypto.randomBytes(32).toString("hex");
         const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-        // Allow role selection (defaults to student, protects admin unless specified during initial setup)
-        const userRole = ["student", "mentor", "admin"].includes(role) ? role : "student";
+        // Public registration always assigns standard candidate (student) role
+        const userRole = "student";
 
         // Setup first session
         const sessionId = `sess_${crypto.randomBytes(16).toString("hex")}`;
@@ -832,9 +832,9 @@ const googleAuth = async (req, res) => {
             });
         }
 
-        // Create new user with Google Auth
+        // Create new user with Google Auth (always standard student candidate)
         const randomPassword = crypto.randomBytes(24).toString("hex") + "A1!";
-        const userRole = ["student", "mentor", "admin"].includes(role) ? role : "student";
+        const userRole = "student";
 
         user = new User({
             name: (name || "Google User").trim(),

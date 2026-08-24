@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
-import { Shield, GraduationCap, User, CheckCircle2, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const isValidEmail = (email: string) => {
@@ -42,8 +42,7 @@ const RegisterPage = () => {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
-        password: "",
-        role: "student" as "student" | "mentor" | "admin"
+        password: ""
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -86,14 +85,8 @@ const RegisterPage = () => {
         setIsLoading(true);
 
         try {
-            const res = await register(formData.name, formData.email, formData.password, formData.role);
-            if (formData.role === "admin") {
-                router.push("/admin");
-            } else if (formData.role === "mentor") {
-                router.push("/mentor");
-            } else {
-                router.push("/dashboard");
-            }
+            await register(formData.name, formData.email, formData.password);
+            router.push("/dashboard");
         } catch (err: any) {
             setError(err.response?.data?.message || err.message || "Registration failed. Please try again.");
         } finally {
@@ -109,13 +102,13 @@ const RegisterPage = () => {
             </div>
 
             {/* Register Card Component */}
-            <Card className="w-full max-w-lg bg-card/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-border/80 text-center">
+            <Card className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-border/80 text-center">
                 <CardHeader className="p-0 mb-6">
                     <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
                         Create Your Account
                     </CardTitle>
                     <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
-                        Get started with AI Mock Interviews, Peer Arena & Mentorship
+                        Get started with AI Mock Interviews, Peer Arena & Readiness Tracking
                     </CardDescription>
                 </CardHeader>
 
@@ -124,7 +117,7 @@ const RegisterPage = () => {
                     <div className="mb-4">
                         <GoogleSignInButton
                             text="Sign up with Google"
-                            role={formData.role}
+                            role="student"
                             onError={(err) => setError(err)}
                         />
                     </div>
@@ -135,48 +128,8 @@ const RegisterPage = () => {
                         </div>
                         <div className="relative flex justify-center text-[10px] uppercase">
                             <span className="bg-card px-2 text-muted-foreground font-semibold">
-                                Or register with email & role
+                                Or register with email
                             </span>
-                        </div>
-                    </div>
-
-                    {/* Role Selection Tabs */}
-                    <div className="mb-6">
-                        <label className="block text-xs font-semibold text-foreground text-left mb-2">
-                            Select Account Role
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {[
-                                { role: "student", label: "Student", desc: "Candidate Practice", icon: User },
-                                { role: "mentor", label: "Mentor", desc: "Evaluate & Grade", icon: GraduationCap },
-                                { role: "admin", label: "Admin", desc: "Platform Control", icon: Shield }
-                            ].map((item) => {
-                                const Icon = item.icon;
-                                const isSelected = formData.role === item.role;
-                                return (
-                                    <button
-                                        key={item.role}
-                                        type="button"
-                                        onClick={() => setFormData(prev => ({ ...prev, role: item.role as any }))}
-                                        className={`p-3 rounded-2xl border text-left flex flex-col items-start gap-1 transition-all cursor-pointer ${
-                                            isSelected
-                                                ? "border-blue-600 bg-blue-50 dark:bg-blue-950/60 shadow-xs"
-                                                : "border-border/60 bg-muted/20 hover:bg-muted/50 text-muted-foreground"
-                                        }`}
-                                    >
-                                        <div className="flex items-center justify-between w-full">
-                                            <Icon className={`w-4 h-4 ${isSelected ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
-                                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                                        </div>
-                                        <span className={`text-xs font-bold ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
-                                            {item.label}
-                                        </span>
-                                        <span className="text-[10px] text-muted-foreground line-clamp-1">
-                                            {item.desc}
-                                        </span>
-                                    </button>
-                                );
-                            })}
                         </div>
                     </div>
 
@@ -261,10 +214,10 @@ const RegisterPage = () => {
                                             {criteria.hasMinLen ? "✓" : "○"} 8+ Characters
                                         </span>
                                         <span className={criteria.hasUpper && criteria.hasLower ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}>
-                                            {criteria.hasUpper && criteria.hasLower ? "✓" : "○"} Uppercase & Lowercase
+                                            {criteria.hasUpper && criteria.hasLower ? "✓" : "○"} Upper & Lower
                                         </span>
                                         <span className={criteria.hasNumOrSpec ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}>
-                                            {criteria.hasNumOrSpec ? "✓" : "○"} Number or Special Symbol
+                                            {criteria.hasNumOrSpec ? "✓" : "○"} Number or Symbol
                                         </span>
                                         <span className="text-muted-foreground">
                                             ✓ Enterprise Encrypted
@@ -285,7 +238,7 @@ const RegisterPage = () => {
                             disabled={isLoading}
                             className="w-full h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 transition-all mt-2 cursor-pointer"
                         >
-                            {isLoading ? "Creating Account..." : `Register as ${formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}`}
+                            {isLoading ? "Creating Account..." : "Create Candidate Account"}
                         </Button>
                     </form>
 
