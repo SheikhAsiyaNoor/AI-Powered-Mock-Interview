@@ -344,6 +344,14 @@ export default function ChallengeRunnerPage({
                                 </div>
                             )}
 
+                            {/* Candidate's Submitted Answer */}
+                            {ans.candidateAnswer && (
+                                <div className="p-3.5 rounded-xl bg-muted/30 border border-border/40 text-xs space-y-1">
+                                    <div className="font-bold text-muted-foreground">Your Submitted Answer:</div>
+                                    <p className="text-foreground whitespace-pre-wrap leading-relaxed">{ans.candidateAnswer}</p>
+                                </div>
+                            )}
+
                             {/* Qualitative Feedback */}
                             <div className="p-3.5 rounded-xl bg-muted/20 border border-border/40 text-xs space-y-1.5">
                                 <div className="font-bold text-foreground flex items-center gap-1.5">

@@ -541,7 +541,7 @@ export default function ReadinessPage() {
                         <div className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/30 text-blue-700 dark:text-blue-300 p-3 rounded-xl border border-blue-200 dark:border-blue-800/50 flex items-center gap-2">
                             <Sparkles className="w-4 h-4 shrink-0" />
                             <span>
-                                Configured Benchmarks: Placement Ready threshold $\ge$ <strong>{scoringConfig.placementReadyThreshold}%</strong> | High Potential threshold $\ge$ <strong>{scoringConfig.highPotentialThreshold}%</strong>.
+                                Configured Benchmarks: Placement Ready threshold ≥ <strong>{scoringConfig.placementReadyThreshold}%</strong> | High Potential threshold ≥ <strong>{scoringConfig.highPotentialThreshold}%</strong>.
                             </span>
                         </div>
                     </div>

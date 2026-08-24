@@ -502,12 +502,22 @@ export default function ArenaPage() {
                                             </div>
 
                                             {challenge.isCompleted ? (
-                                                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
-                                                    <div className="flex items-center gap-1.5">
-                                                        <CheckCircle2 className="w-4 h-4" />
-                                                        <span>Completed</span>
+                                                <div className="space-y-2.5">
+                                                    <div className="flex items-center justify-between p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <CheckCircle2 className="w-4 h-4" />
+                                                            <span>Completed</span>
+                                                        </div>
+                                                        <span className="font-bold font-mono">Score: {challenge.userScore}%</span>
                                                     </div>
-                                                    <span className="font-bold font-mono">Score: {challenge.userScore}%</span>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => router.push(`/arena/${challenge.id}`)}
+                                                        className="w-full h-10 rounded-xl border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/10 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                                                    >
+                                                        <span>Review Submission & AI Rubric</span>
+                                                        <ArrowRight className="w-3.5 h-3.5" />
+                                                    </Button>
                                                 </div>
                                             ) : (
                                                 <Button
