@@ -720,7 +720,7 @@ export default function ArenaPage() {
                         </div>
                     </div>
 
-                    {/* LeetCode Badges Grid */}
+                    {/* AIPMI Vanguard Accolades Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
                         {filteredBadges.map((badge) => {
                             const rStyle = RARITY_THEMES[badge.rarity] || RARITY_THEMES.common;

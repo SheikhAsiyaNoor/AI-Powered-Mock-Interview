@@ -26,7 +26,7 @@ const getDefaultGapAndRoadmap = (candidateLevel, targetRole, domainScores) => {
                 topic: "Data Structures & Algorithms",
                 severity: "High",
                 description: "Basic understanding of arrays, but optimization using dynamic programming and graph traversals needs work.",
-                actionItem: "Solve 20 medium-level array and tree problems on LeetCode/HackerRank."
+                actionItem: "Solve 20 medium-level array and tree problems on Coding Arena/Practice Hub."
             },
             {
                 topic: "Database Indexing & SQL Queries",
