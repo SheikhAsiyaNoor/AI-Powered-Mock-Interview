@@ -7,6 +7,7 @@ export interface StoredUser {
     email: string;
     name: string;
     role: "student" | "mentor" | "admin";
+    avatar?: string;
     isEmailVerified?: boolean;
     activeSessionsCount?: number;
     unresolvedAlertsCount?: number;

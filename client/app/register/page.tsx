@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
-import { Shield, GraduationCap, User, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { Shield, GraduationCap, User, CheckCircle2, Lock } from "lucide-react";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 
 const isValidEmail = (email: string) => {
     if (!email) return false;
@@ -119,6 +120,26 @@ const RegisterPage = () => {
                 </CardHeader>
 
                 <CardContent className="p-0">
+                    {/* Google Sign-In Button */}
+                    <div className="mb-4">
+                        <GoogleSignInButton
+                            text="Sign up with Google"
+                            role={formData.role}
+                            onError={(err) => setError(err)}
+                        />
+                    </div>
+
+                    <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-border/60" />
+                        </div>
+                        <div className="relative flex justify-center text-[10px] uppercase">
+                            <span className="bg-card px-2 text-muted-foreground font-semibold">
+                                Or register with email & role
+                            </span>
+                        </div>
+                    </div>
+
                     {/* Role Selection Tabs */}
                     <div className="mb-6">
                         <label className="block text-xs font-semibold text-foreground text-left mb-2">
@@ -273,6 +294,11 @@ const RegisterPage = () => {
                         <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
                             Sign in
                         </Link>
+                    </div>
+
+                    <div className="mt-3 pt-3 border-t border-border/40 text-[11px] text-muted-foreground flex items-center justify-center gap-1.5">
+                        <Lock className="w-3 h-3 text-emerald-600" />
+                        <span>Enterprise TLS & Google SSO Protected</span>
                     </div>
                 </CardContent>
             </Card>

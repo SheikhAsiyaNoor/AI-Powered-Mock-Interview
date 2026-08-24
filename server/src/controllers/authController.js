@@ -728,9 +728,197 @@ const getMe = async (req, res) => {
     }
 };
 
+// ==========================================
+// 9. GOOGLE OAUTH / SSO AUTHENTICATION
+// ==========================================
+const googleAuth = async (req, res) => {
+    try {
+        const { credential, email: directEmail, name: directName, googleId: directGoogleId, avatar: directAvatar, role = "student" } = req.body;
+
+        let email = directEmail;
+        let name = directName;
+        let googleId = directGoogleId;
+        let avatar = directAvatar;
+
+        // If Google JWT Credential ID Token is supplied from Google Identity Services
+        if (credential) {
+            try {
+                const decoded = jwt.decode(credential);
+                if (decoded && decoded.email) {
+                    email = decoded.email;
+                    name = decoded.name || decoded.given_name || "Google User";
+                    googleId = decoded.sub;
+                    avatar = decoded.picture || "";
+                }
+            } catch (decErr) {
+                console.error("Error decoding Google credential:", decErr);
+            }
+        }
+
+        if (!email) {
+            return res.status(400).json({ message: "Google authentication failed: Email is required." });
+        }
+
+        const normalizedEmail = email.trim().toLowerCase();
+        let user = await User.findOne({
+            $or: [
+                ...(googleId ? [{ googleId }] : []),
+                { email: normalizedEmail }
+            ]
+        });
+
+        const userAgent = req.headers["user-agent"] || "Browser";
+        const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
+        const device = parseUserAgent(userAgent);
+        const sessionId = `sess_${crypto.randomBytes(16).toString("hex")}`;
+
+        const sessionObj = {
+            sessionId,
+            ip,
+            userAgent,
+            device,
+            location: "Local / Verified",
+            createdAt: new Date(),
+            lastActive: new Date()
+        };
+
+        if (user) {
+            if (user.isLocked()) {
+                const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+                return res.status(423).json({
+                    message: `Account is temporarily locked. Try again in ${remainingMinutes} minutes.`,
+                    locked: true,
+                    lockUntil: user.lockUntil,
+                    remainingMinutes
+                });
+            }
+
+            if (!user.googleId && googleId) user.googleId = googleId;
+            if (avatar && !user.avatar) user.avatar = avatar;
+            user.isEmailVerified = true;
+            user.failedLoginAttempts = 0;
+            user.lockUntil = null;
+
+            user.activeSessions.unshift(sessionObj);
+            if (user.activeSessions.length > 10) user.activeSessions = user.activeSessions.slice(0, 10);
+
+            user.loginHistory.unshift({
+                timestamp: new Date(),
+                ip,
+                userAgent,
+                device,
+                status: "SUCCESS",
+                reason: "Google SSO Authentication",
+                suspicious: false
+            });
+            if (user.loginHistory.length > 50) user.loginHistory = user.loginHistory.slice(0, 50);
+
+            await user.save();
+
+            const token = signToken(user._id.toString(), user.role, sessionId);
+
+            return res.status(200).json({
+                message: "Logged in with Google successfully!",
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role || "student",
+                    avatar: user.avatar,
+                    isEmailVerified: user.isEmailVerified
+                },
+                token,
+                sessionId
+            });
+        }
+
+        // Create new user with Google Auth
+        const randomPassword = crypto.randomBytes(24).toString("hex") + "A1!";
+        const userRole = ["student", "mentor", "admin"].includes(role) ? role : "student";
+
+        user = new User({
+            name: (name || "Google User").trim(),
+            email: normalizedEmail,
+            password: randomPassword,
+            googleId,
+            avatar: avatar || "",
+            authProvider: "google",
+            role: userRole,
+            isEmailVerified: true,
+            activeSessions: [sessionObj],
+            loginHistory: [{
+                timestamp: new Date(),
+                ip,
+                userAgent,
+                device,
+                status: "SUCCESS",
+                reason: "Google SSO Registration"
+            }],
+            securityAlerts: []
+        });
+
+        await user.save();
+
+        // Initialize UserGamification profile
+        await UserGamification.findOneAndUpdate(
+            { userId: user._id },
+            {
+                userId: user._id,
+                totalXp: 0,
+                currentRank: "Novice",
+                level: 1,
+                currentStreak: 0,
+                maxStreak: 0,
+                challengesCompleted: 0,
+                categoryStats: {
+                    Technical: { completed: 0, totalScore: 0 },
+                    HR: { completed: 0, totalScore: 0 },
+                    Aptitude: { completed: 0, totalScore: 0 },
+                    DomainSpecific: { completed: 0, totalScore: 0 }
+                },
+                badges: [{
+                    badgeId: "welcome_challenger",
+                    name: "Arena Initiate",
+                    description: "Enrolled in the Peer Challenge Arena",
+                    icon: "⚔️",
+                    category: "General",
+                    unlockedAt: new Date()
+                }],
+                rankingHistory: [{
+                    date: new Date(),
+                    rank: 100,
+                    xp: 0,
+                    challengesCompleted: 0
+                }]
+            },
+            { upsert: true, new: true }
+        );
+
+        const token = signToken(user._id.toString(), user.role, sessionId);
+
+        res.status(201).json({
+            message: "Registered and logged in with Google successfully!",
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                avatar: user.avatar,
+                isEmailVerified: user.isEmailVerified
+            },
+            token,
+            sessionId
+        });
+    } catch (err) {
+        console.error("Google Auth error:", err);
+        res.status(500).json({ message: "Server error during Google authentication", error: err.message });
+    }
+};
+
 module.exports = {
     register,
     login,
+    googleAuth,
     getMe,
     verifyEmail,
     resendVerification,

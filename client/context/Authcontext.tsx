@@ -14,6 +14,15 @@ import {
 } from "@/lib/auth";
 import axiosInstance from "@/lib/axios";
 
+interface GoogleAuthPayload {
+    credential?: string;
+    email?: string;
+    name?: string;
+    googleId?: string;
+    avatar?: string;
+    role?: string;
+}
+
 interface AuthContextType {
     user: StoredUser | null;
     isLoggedIn: boolean;
@@ -22,6 +31,7 @@ interface AuthContextType {
     isLoading: boolean;
     login: (email: string, password: string) => Promise<any>;
     register: (name: string, email: string, password: string, role?: string) => Promise<any>;
+    loginWithGoogle: (payload: GoogleAuthPayload) => Promise<any>;
     logout: () => void;
     refreshUser: () => Promise<void>;
     updateUser: (updatedData: Partial<StoredUser>) => void;
@@ -56,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                         name: data.name,
                         email: data.email,
                         role: data.role || "student",
+                        avatar: data.avatar || storedUser.avatar || "",
                         isEmailVerified: data.isEmailVerified,
                         activeSessionsCount: data.activeSessionsCount,
                         unresolvedAlertsCount: data.unresolvedAlertsCount,
@@ -121,6 +132,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return data;
     };
 
+    const loginWithGoogle = async (payload: GoogleAuthPayload) => {
+        const { data } = await axiosInstance.post("/api/auth/google", payload);
+
+        if (data.token && data.user) {
+            saveToken(data.token);
+            saveStoredUser(data.user);
+            if (data.sessionId) saveSessionId(data.sessionId);
+
+            setTokenState(data.token);
+            setUser(data.user);
+            setSessionIdState(data.sessionId || null);
+            setIsLoggedIn(true);
+        }
+        return data;
+    };
+
     const logout = () => {
         removeToken();
         removeStoredUser();
@@ -139,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ user, isLoggedIn, token, sessionId, isLoading, login, register, logout, refreshUser, updateUser }}>
+        <AuthContext.Provider value={{ user, isLoggedIn, token, sessionId, isLoading, login, register, loginWithGoogle, logout, refreshUser, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

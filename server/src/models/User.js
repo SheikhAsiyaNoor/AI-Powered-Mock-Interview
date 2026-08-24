@@ -28,7 +28,7 @@ const loginHistorySchema = new mongoose.Schema({
 
 const securityAlertSchema = new mongoose.Schema({
     alertId: { type: String, required: true },
-    type: { type: String, required: true }, // e.g. "MULTIPLE_FAILED_LOGINS", "NEW_DEVICE_LOGIN", "ACCOUNT_LOCKED"
+    type: { type: String, required: true },
     message: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
     severity: {
@@ -49,6 +49,15 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
     password: { type: String, required: true, minlength: 6, trim: true },
     
+    // Google OAuth & SSO integration
+    googleId: { type: String, sparse: true, index: true },
+    avatar: { type: String, default: "" },
+    authProvider: {
+        type: String,
+        enum: ["local", "google"],
+        default: "local"
+    },
+
     // Role-Based Access Control (RBAC)
     role: {
         type: String,
