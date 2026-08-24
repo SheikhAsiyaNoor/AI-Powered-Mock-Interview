@@ -433,24 +433,30 @@ function DashboardContent() {
                     <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Your Dashboard</h1>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                    <Button
+                        onClick={() => router.push("/arena")}
+                        className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-orange-500/20 text-xs"
+                    >
+                        <span>⚔️</span> Peer Arena
+                    </Button>
                     <Button
                         onClick={() => router.push("/simulator")}
                         variant="outline"
-                        className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs"
+                        className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-semibold px-3.5 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs text-xs"
                     >
-                        <span>🏢</span> Recruiter Simulator
+                        <span>🏢</span> Simulator
                     </Button>
                     <Button
                         onClick={() => router.push("/readiness")}
                         variant="outline"
-                        className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs"
+                        className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 font-semibold px-3.5 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs text-xs"
                     >
-                        <span>🚀</span> Readiness Engine
+                        <span>🚀</span> Readiness
                     </Button>
                     <Button
                         onClick={() => setShowDomainSelector(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer text-xs"
                     >
                         <span>⚡</span> New Interview
                     </Button>

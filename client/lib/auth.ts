@@ -1,37 +1,60 @@
-const TOKEN_KEY = "token"
-const USER_KEY = "user"
+const TOKEN_KEY = "token";
+const USER_KEY = "user";
+const SESSION_KEY = "session_id";
 
 export interface StoredUser {
     id: string;
     email: string;
     name: string;
-    createdAt: string;
+    role: "student" | "mentor" | "admin";
+    isEmailVerified?: boolean;
+    activeSessionsCount?: number;
+    unresolvedAlertsCount?: number;
+    createdAt?: string;
 }
 
-export const getToken = () => {
-    if (typeof window === "undefined") return null
-    return localStorage.getItem(TOKEN_KEY)
-}
+export const getToken = (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(TOKEN_KEY);
+};
 
 export const setToken = (token: string): void => {
-    localStorage.setItem(TOKEN_KEY, token)
-}
+    if (typeof window === "undefined") return;
+    localStorage.setItem(TOKEN_KEY, token);
+};
 
 export const removeToken = (): void => {
-    localStorage.removeItem(TOKEN_KEY)
-}
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(TOKEN_KEY);
+};
 
 export const getStoredUser = (): StoredUser | null => {
-    if (typeof window === "undefined") return null
-    const user = localStorage.getItem(USER_KEY)
-    return user ? JSON.parse(user) : null
-}
+    if (typeof window === "undefined") return null;
+    const user = localStorage.getItem(USER_KEY);
+    return user ? JSON.parse(user) : null;
+};
 
 export const setStoredUser = (user: StoredUser): void => {
-    localStorage.setItem(USER_KEY, JSON.stringify(user))
-}
+    if (typeof window === "undefined") return;
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+};
 
 export const removeStoredUser = (): void => {
-    localStorage.removeItem(USER_KEY)
-}
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(USER_KEY);
+};
 
+export const getSessionId = (): string | null => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem(SESSION_KEY);
+};
+
+export const setSessionId = (sessionId: string): void => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(SESSION_KEY, sessionId);
+};
+
+export const removeSessionId = (): void => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(SESSION_KEY);
+};

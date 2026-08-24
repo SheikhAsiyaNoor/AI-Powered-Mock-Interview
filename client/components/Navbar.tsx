@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/Authcontext";
+import { ShieldCheck, GraduationCap, Swords, Lock, User as UserIcon } from "lucide-react";
 
 const Navbar = () => {
     const pathName = usePathname();
@@ -22,25 +23,31 @@ const Navbar = () => {
         setMobileOpen(false);
     }, [pathName]);
 
+    const isMentorOrAdmin = user?.role === "mentor" || user?.role === "admin";
+    const isAdmin = user?.role === "admin";
+
     const navLinks = isLoggedIn
         ? [
               { href: "/dashboard", label: "Dashboard", icon: "⚡" },
+              { href: "/arena", label: "Peer Arena", icon: "⚔️", highlight: true },
               { href: "/simulator", label: "Recruiter Simulator", icon: "🏢" },
               { href: "/readiness", label: "Readiness Engine", icon: "🚀" },
               { href: "/practice", label: "Practice", icon: "🎯" },
-              { href: "/dashboard?tab=history", label: "My Sessions", icon: "📊" },
+              ...(isMentorOrAdmin ? [{ href: "/mentor", label: "Mentor Hub", icon: "🎓", badge: "Mentor" }] : []),
+              ...(isAdmin ? [{ href: "/admin", label: "Admin Portal", icon: "🛡️", badge: "Admin" }] : []),
           ]
         : [
+              { href: "/arena", label: "Peer Arena", icon: "⚔️" },
               { href: "/#features", label: "Features", icon: "⚡" },
               { href: "/#how-it-works", label: "How it works?", icon: "🔍" },
-              { href: "/#domains", label: "Domain", icon: "🧩" },
+              { href: "/#domains", label: "Domains", icon: "🧩" },
           ];
 
     return (
         <header
             className={`sticky top-0 z-40 w-full transition-all duration-300 ${
                 scrolled
-                    ? "bg-background/80 backdrop-blur-md border-b border-border shadow-xs"
+                    ? "bg-background/85 backdrop-blur-md border-b border-border shadow-xs"
                     : "bg-background border-b border-border/40"
             }`}
         >
@@ -62,36 +69,58 @@ const Navbar = () => {
                     </Link>
 
                     {/* Desktop Navigation Links */}
-                    <nav className="hidden md:flex items-center gap-1">
+                    <nav className="hidden lg:flex items-center gap-1">
                         {navLinks.map((link) => {
                             const isActive = pathName === link.href;
                             return (
                                 <Link
                                     key={link.href}
                                     href={link.href}
-                                    className={`flex items-center gap-2 px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                                         isActive
-                                            ? "bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400"
+                                            ? "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400 border border-blue-200/50 dark:border-blue-800/40"
                                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                                     }`}
                                 >
                                     <span>{link.icon}</span>
-                                    {link.label}
+                                    <span>{link.label}</span>
                                 </Link>
                             );
                         })}
                     </nav>
 
-                    {/* Auth User Action Buttons */}
-                    <div className="hidden md:flex items-center gap-3">
+                    {/* Auth User Action Buttons & Security Links */}
+                    <div className="hidden md:flex items-center gap-2.5">
                         {isLoggedIn ? (
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <Link
+                                    href="/settings/security"
+                                    title="Security Settings & Active Sessions"
+                                    className={`p-2 rounded-xl border border-border/50 text-xs font-semibold hover:bg-muted transition-colors ${
+                                        pathName === "/settings/security" ? "bg-blue-50 text-blue-600 border-blue-300" : "text-muted-foreground"
+                                    }`}
+                                >
+                                    <Lock className="w-4 h-4" />
+                                </Link>
+
                                 <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 border border-border/50 text-xs font-semibold">
                                     <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px]">
                                         {user?.name?.[0]?.toUpperCase() || "U"}
                                     </div>
-                                    <span className="text-foreground">Hi, {user?.name || "User"}</span>
+                                    <span className="text-foreground max-w-[100px] truncate">{user?.name || "User"}</span>
+                                    
+                                    {/* Role Badge */}
+                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
+                                        user?.role === "admin"
+                                            ? "bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                                            : user?.role === "mentor"
+                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                            : "bg-blue-100/80 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300"
+                                    }`}>
+                                        {user?.role || "student"}
+                                    </span>
                                 </div>
+
                                 <Button
                                     variant="outline"
                                     size="sm"
@@ -118,7 +147,7 @@ const Navbar = () => {
                     </div>
 
                     {/* Mobile Hamburger Button */}
-                    <div className="md:hidden flex items-center gap-2">
+                    <div className="lg:hidden flex items-center gap-2">
                         <Button
                             variant="ghost"
                             size="sm"
@@ -133,7 +162,7 @@ const Navbar = () => {
 
             {/* Mobile Navigation Dropdown Menu */}
             {mobileOpen && (
-                <div className="md:hidden border-b border-border bg-background px-4 pt-2 pb-4 space-y-2">
+                <div className="lg:hidden border-b border-border bg-background px-4 pt-2 pb-4 space-y-2">
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}
@@ -141,14 +170,31 @@ const Navbar = () => {
                             className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
                         >
                             <span>{link.icon}</span>
-                            {link.label}
+                            <span>{link.label}</span>
                         </Link>
                     ))}
+
+                    {isLoggedIn && (
+                        <Link
+                            href="/settings/security"
+                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
+                        >
+                            <Lock className="w-4 h-4 text-blue-600" />
+                            <span>Security & Active Sessions</span>
+                        </Link>
+                    )}
+
                     <div className="pt-2 border-t border-border flex flex-col gap-2">
                         {isLoggedIn ? (
-                            <Button variant="outline" onClick={logout} className="w-full rounded-xl text-xs font-semibold">
-                                Logout
-                            </Button>
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between px-2 text-xs text-muted-foreground">
+                                    <span>Signed in as: <strong className="text-foreground">{user?.name}</strong></span>
+                                    <span className="font-bold uppercase text-blue-600">{user?.role}</span>
+                                </div>
+                                <Button variant="outline" onClick={logout} className="w-full rounded-xl text-xs font-semibold">
+                                    Logout
+                                </Button>
+                            </div>
                         ) : (
                             <>
                                 <Link href="/login" className="w-full">

@@ -41,7 +41,7 @@ const peerChallengeSchema = new mongoose.Schema({
     },
     timeLimitMinutes: { type: Number, default: 15 },
     startDate: { type: Date, required: true, index: true },
-    endDate: { type: Date, reuired: true, index: true },
+    endDate: { type: Date, required: true, index: true },
     questions: [questionSchema],
     totalPoints: { type: Number, default: 100 },
     xpReward: { type: Number, default: 150 },

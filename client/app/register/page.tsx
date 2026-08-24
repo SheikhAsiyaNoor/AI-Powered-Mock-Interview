@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
+import { Shield, GraduationCap, User, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
 
 const isValidEmail = (email: string) => {
     if (!email) return false;
@@ -33,7 +34,7 @@ const getPasswordStrength = (pwd: string) => {
     return { score: 100, label: "Strong 💪", color: "bg-emerald-500", text: "text-emerald-500" };
 };
 
-const Page = () => {
+const RegisterPage = () => {
     const router = useRouter();
     const { register } = useAuth();
 
@@ -41,6 +42,7 @@ const Page = () => {
         name: "",
         email: "",
         password: "",
+        role: "student" as "student" | "mentor" | "admin"
     });
 
     const [isLoading, setIsLoading] = useState(false);
@@ -61,7 +63,7 @@ const Page = () => {
         setError("");
 
         if (!isEmailValid) {
-            setError("Please enter a valid email address (standard or temporary email domain allowed).");
+            setError("Please enter a valid email address.");
             return;
         }
 
@@ -83,8 +85,14 @@ const Page = () => {
         setIsLoading(true);
 
         try {
-            await register(formData.name, formData.email, formData.password);
-            router.push("/dashboard");
+            const res = await register(formData.name, formData.email, formData.password, formData.role);
+            if (formData.role === "admin") {
+                router.push("/admin");
+            } else if (formData.role === "mentor") {
+                router.push("/mentor");
+            } else {
+                router.push("/dashboard");
+            }
         } catch (err: any) {
             setError(err.response?.data?.message || err.message || "Registration failed. Please try again.");
         } finally {
@@ -93,74 +101,111 @@ const Page = () => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100/80 via-blue-50/40 to-white px-4 py-12">
+        <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100/80 via-blue-50/40 to-background px-4 py-12">
             {/* Top AI Icon Badge */}
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-lg shadow-blue-500/30 mb-6">
                 <span>AI</span>
             </div>
 
             {/* Register Card Component */}
-            <Card className="w-full max-w-md bg-white/90 backdrop-blur-sm rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-blue-100/80 text-center">
+            <Card className="w-full max-w-lg bg-card/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-border/80 text-center">
                 <CardHeader className="p-0 mb-6">
-                    <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
-                        Create an Account
+                    <CardTitle className="text-2xl font-bold tracking-tight text-foreground">
+                        Create Your Account
                     </CardTitle>
-                    <CardDescription className="text-sm font-medium text-slate-500 mt-1">
-                        Get started with your AI Mock Interview practice
+                    <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
+                        Get started with AI Mock Interviews, Peer Arena & Mentorship
                     </CardDescription>
                 </CardHeader>
 
                 <CardContent className="p-0">
+                    {/* Role Selection Tabs */}
+                    <div className="mb-6">
+                        <label className="block text-xs font-semibold text-foreground text-left mb-2">
+                            Select Account Role
+                        </label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {[
+                                { role: "student", label: "Student", desc: "Candidate Practice", icon: User },
+                                { role: "mentor", label: "Mentor", desc: "Evaluate & Grade", icon: GraduationCap },
+                                { role: "admin", label: "Admin", desc: "Platform Control", icon: Shield }
+                            ].map((item) => {
+                                const Icon = item.icon;
+                                const isSelected = formData.role === item.role;
+                                return (
+                                    <button
+                                        key={item.role}
+                                        type="button"
+                                        onClick={() => setFormData(prev => ({ ...prev, role: item.role as any }))}
+                                        className={`p-3 rounded-2xl border text-left flex flex-col items-start gap-1 transition-all cursor-pointer ${
+                                            isSelected
+                                                ? "border-blue-600 bg-blue-50 dark:bg-blue-950/60 shadow-xs"
+                                                : "border-border/60 bg-muted/20 hover:bg-muted/50 text-muted-foreground"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between w-full">
+                                            <Icon className={`w-4 h-4 ${isSelected ? "text-blue-600 dark:text-blue-400" : "text-muted-foreground"}`} />
+                                            {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                                        </div>
+                                        <span className={`text-xs font-bold ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                                            {item.label}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground line-clamp-1">
+                                            {item.desc}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
                     <form onSubmit={handleSubmit} className="space-y-4 text-left">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                            <label className="block text-xs font-semibold text-foreground mb-1.5">
                                 Full Name
                             </label>
                             <Input
                                 type="text"
                                 name="name"
-                                placeholder="John Doe"
+                                placeholder="Alex Chen"
                                 value={formData.name}
                                 onChange={handleChange}
                                 required
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white text-sm px-4 focus-visible:ring-blue-500"
+                                className="h-11 rounded-xl border-border bg-muted/40 focus:bg-background text-sm px-4 focus-visible:ring-blue-500"
                             />
                         </div>
 
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-xs font-semibold text-slate-700">
+                                <label className="block text-xs font-semibold text-foreground">
                                     Email Address
                                 </label>
                                 {formData.email && (
                                     <span
                                         className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                                             isEmailValid
-                                                ? "bg-emerald-100 text-emerald-700"
-                                                : "bg-rose-100 text-rose-700"
+                                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
+                                                : "bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300"
                                         }`}
                                     >
-                                        {isEmailValid ? "✓ Valid Email" : "Invalid Format"}
+                                        {isEmailValid ? "✓ Valid Format" : "Invalid Format"}
                                     </span>
                                 )}
                             </div>
                             <Input
                                 type="email"
                                 name="email"
-                                placeholder="you@example.com or temp@tempmail.com"
+                                placeholder="alex@company.com"
                                 value={formData.email}
                                 onChange={handleChange}
                                 required
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white text-sm px-4 focus-visible:ring-blue-500"
+                                className="h-11 rounded-xl border-border bg-muted/40 focus:bg-background text-sm px-4 focus-visible:ring-blue-500"
                             />
-                            <p className="text-[11px] text-slate-400 mt-1">
-                                Standard & temporary emails (e.g. TempMail, GuerrillaMail, Mailinator) supported.
-                            </p>
                         </div>
 
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-xs font-semibold text-slate-700">
+                                <label className="block text-xs font-semibold text-foreground">
                                     Password
                                 </label>
                                 {formData.password && (
@@ -176,13 +221,13 @@ const Page = () => {
                                 value={formData.password}
                                 onChange={handleChange}
                                 required
-                                className="h-11 rounded-xl border-slate-200 bg-slate-50/50 focus:bg-white text-sm px-4 focus-visible:ring-blue-500"
+                                className="h-11 rounded-xl border-border bg-muted/40 focus:bg-background text-sm px-4 focus-visible:ring-blue-500"
                             />
 
                             {/* Password Strength Meter */}
                             {formData.password && (
                                 <div className="mt-2 space-y-2">
-                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                    <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
                                         <div
                                             className={`h-full transition-all duration-300 ${strength.color}`}
                                             style={{ width: `${strength.score}%` }}
@@ -191,14 +236,17 @@ const Page = () => {
 
                                     {/* Criteria Checklist */}
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] pt-1">
-                                        <span className={criteria.hasMinLen ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                                        <span className={criteria.hasMinLen ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}>
                                             {criteria.hasMinLen ? "✓" : "○"} 8+ Characters
                                         </span>
-                                        <span className={criteria.hasUpper && criteria.hasLower ? "text-emerald-600 font-semibold" : "text-slate-400"}>
+                                        <span className={criteria.hasUpper && criteria.hasLower ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}>
                                             {criteria.hasUpper && criteria.hasLower ? "✓" : "○"} Uppercase & Lowercase
                                         </span>
-                                        <span className={criteria.hasNumOrSpec ? "text-emerald-600 font-semibold" : "text-slate-400"}>
-                                            {criteria.hasNumOrSpec ? "✓" : "○"} Number or Symbol
+                                        <span className={criteria.hasNumOrSpec ? "text-emerald-600 dark:text-emerald-400 font-semibold" : "text-muted-foreground"}>
+                                            {criteria.hasNumOrSpec ? "✓" : "○"} Number or Special Symbol
+                                        </span>
+                                        <span className="text-muted-foreground">
+                                            ✓ Enterprise Encrypted
                                         </span>
                                     </div>
                                 </div>
@@ -206,7 +254,7 @@ const Page = () => {
                         </div>
 
                         {error && (
-                            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs font-medium">
+                            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-xs font-medium">
                                 {error}
                             </div>
                         )}
@@ -216,13 +264,13 @@ const Page = () => {
                             disabled={isLoading}
                             className="w-full h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 transition-all mt-2 cursor-pointer"
                         >
-                            {isLoading ? "Creating account..." : "Sign Up"}
+                            {isLoading ? "Creating Account..." : `Register as ${formData.role.charAt(0).toUpperCase() + formData.role.slice(1)}`}
                         </Button>
                     </form>
 
-                    <div className="mt-6 text-center text-xs text-slate-500 font-medium">
+                    <div className="mt-6 text-center text-xs text-muted-foreground font-medium">
                         Already have an account?{" "}
-                        <Link href="/login" className="text-blue-600 font-bold hover:underline">
+                        <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
                             Sign in
                         </Link>
                     </div>
@@ -232,4 +280,4 @@ const Page = () => {
     );
 };
 
-export default Page;
+export default RegisterPage;
