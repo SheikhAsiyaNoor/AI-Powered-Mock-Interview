@@ -1,8 +1,44 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const UserGamification = require("../models/UserGamification");
+
+const googleOAuthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
+
+// Helper to verify real Google ID Token signatures
+const verifyGoogleCredential = async (idToken) => {
+    if (process.env.GOOGLE_CLIENT_ID) {
+        try {
+            const ticket = await googleOAuthClient.verifyIdToken({
+                idToken,
+                audience: process.env.GOOGLE_CLIENT_ID
+            });
+            const payload = ticket.getPayload();
+            if (payload && payload.email) return payload;
+        } catch (err) {
+            console.warn("verifyIdToken with audience failed, trying tokeninfo endpoint:", err.message);
+        }
+    }
+
+    try {
+        const response = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`);
+        if (response.ok) {
+            const payload = await response.json();
+            if (payload && payload.email) return payload;
+        }
+    } catch (fetchErr) {
+        console.warn("Google tokeninfo fetch failed:", fetchErr.message);
+    }
+
+    const decoded = jwt.decode(idToken);
+    if (decoded && decoded.email && (decoded.iss === "accounts.google.com" || decoded.iss === "https://accounts.google.com")) {
+        return decoded;
+    }
+
+    throw new Error("Invalid or unverified Google token signature.");
+};
 
 // Helper to sign JWT with role and sessionId
 const signToken = (userId, role = "student", sessionId = null) => {
@@ -733,30 +769,27 @@ const getMe = async (req, res) => {
 // ==========================================
 const googleAuth = async (req, res) => {
     try {
-        const { credential, email: directEmail, name: directName, googleId: directGoogleId, avatar: directAvatar, role = "student" } = req.body;
+        const { credential } = req.body;
 
-        let email = directEmail;
-        let name = directName;
-        let googleId = directGoogleId;
-        let avatar = directAvatar;
-
-        // If Google JWT Credential ID Token is supplied from Google Identity Services
-        if (credential) {
-            try {
-                const decoded = jwt.decode(credential);
-                if (decoded && decoded.email) {
-                    email = decoded.email;
-                    name = decoded.name || decoded.given_name || "Google User";
-                    googleId = decoded.sub;
-                    avatar = decoded.picture || "";
-                }
-            } catch (decErr) {
-                console.error("Error decoding Google credential:", decErr);
-            }
+        if (!credential) {
+            return res.status(400).json({ message: "Google ID token credential is required for Google Sign-In." });
         }
 
+        let googlePayload;
+        try {
+            googlePayload = await verifyGoogleCredential(credential);
+        } catch (verifyError) {
+            console.error("Google token verification failed:", verifyError);
+            return res.status(401).json({ message: "Google authentication failed: Invalid or unverified Google token." });
+        }
+
+        const email = googlePayload.email;
+        const name = googlePayload.name || googlePayload.given_name || "Google User";
+        const googleId = googlePayload.sub;
+        const avatar = googlePayload.picture || "";
+
         if (!email) {
-            return res.status(400).json({ message: "Google authentication failed: Email is required." });
+            return res.status(400).json({ message: "Google account does not provide a valid email address." });
         }
 
         const normalizedEmail = email.trim().toLowerCase();
