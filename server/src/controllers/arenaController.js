@@ -458,38 +458,59 @@ Return ONLY valid JSON in this exact structure without markdown or explanation:
         gamification.currentRank = rank;
         gamification.level = level;
 
-        // Badge Unlocking Logic
+        // Badge Unlocking Logic (LeetCode Style)
         const unlockedBadges = [];
         const existingBadgeIds = new Set((gamification.badges || []).map(b => b.badgeId));
 
-        const awardBadge = (badgeId, name, description, icon, category = "General") => {
+        const awardBadge = (badgeId, name, description, icon, category = "General", rarity = "common") => {
             if (!existingBadgeIds.has(badgeId)) {
-                const b = { badgeId, name, description, icon, category, unlockedAt: new Date() };
+                const b = { badgeId, name, description, icon, category, rarity, unlockedAt: new Date() };
                 gamification.badges.push(b);
                 unlockedBadges.push(b);
             }
         };
 
         if (gamification.challengesCompleted >= 1) {
-            awardBadge("first_blood", "First Arena Battle", "Completed your very first AI challenge", "🎯");
+            awardBadge("first_blood", "First Battle", "Completed your very first AI challenge", "🎯", "Milestone", "common");
         }
         if (gamification.challengesCompleted >= 5) {
-            awardBadge("challenger_5", "Seasoned Duelist", "Completed 5 mock challenges", "⚔️");
+            awardBadge("challenger_5", "Seasoned Duelist", "Completed 5 mock challenges", "🗡️", "Volume", "common");
+        }
+        if (gamification.challengesCompleted >= 20) {
+            awardBadge("challenger_20", "Veteran Gladiator", "Completed 20 competitive mock rounds", "🎖️", "Volume", "rare");
+        }
+        if (gamification.challengesCompleted >= 50) {
+            awardBadge("challenger_50", "Century Contender", "Completed 50 competitive interview challenges", "🛡️", "Volume", "epic");
         }
         if (newStreak >= 3) {
-            awardBadge("streak_3", "3-Day Fire Streak", "Maintained a 3-day interview practice streak", "🔥");
+            awardBadge("streak_3", "3-Day Fire", "Maintained a 3-day interview practice streak", "🔥", "Streaks", "rare");
         }
         if (newStreak >= 7) {
-            awardBadge("streak_7", "Weekly Ironclad", "Maintained a 7-day challenge streak", "⚡");
+            awardBadge("streak_7", "Weekly Ironclad", "Maintained a 7-day challenge streak", "⚡", "Streaks", "epic");
+        }
+        if (newStreak >= 30) {
+            awardBadge("streak_30", "Monthly Marathoner", "Maintained an unbroken 30-day streak", "🗓️", "Streaks", "legendary");
         }
         if (finalAggregatedScore >= 95) {
-            awardBadge("perfect_centurion", "Perfectionist", "Scored 95%+ on a competitive challenge", "👑");
+            awardBadge("perfect_centurion", "Perfectionist (100 Club)", "Scored 95%+ on a competitive challenge", "👑", "Excellence", "legendary");
+        }
+        if (timeSpentSeconds > 0 && timeSpentSeconds <= 300 && finalAggregatedScore >= 80) {
+            awardBadge("speed_demon", "Speed Demon", "Completed a challenge in under 5 minutes with >80% score", "🏎️", "Excellence", "epic");
         }
         if (challenge.category === "Technical" && finalAggregatedScore >= 85) {
-            awardBadge("tech_titan", "Technical Titan", "Mastered a High-Difficulty Technical Challenge", "💻", "Technical");
+            awardBadge("tech_titan", "Technical Titan", "Mastered a High-Difficulty Technical Challenge", "💻", "Technical", "rare");
         }
         if (challenge.category === "HR" && finalAggregatedScore >= 85) {
-            awardBadge("star_virtuoso", "STAR Virtuoso", "Flawless behavioral storytelling evaluation", "🌟", "HR");
+            awardBadge("star_virtuoso", "STAR Virtuoso", "Flawless behavioral storytelling evaluation", "🌟", "Behavioral", "rare");
+        }
+        if (challenge.category === "Aptitude" && finalAggregatedScore >= 85) {
+            awardBadge("quant_prodigy", "Analytical Prodigy", "Mastered a Logical Aptitude sprint", "🧠", "Aptitude", "rare");
+        }
+        if (challenge.category === "Domain-Specific" || challenge.category === "DomainSpecific") {
+            awardBadge("system_architect", "System Architect", "Completed a Domain-Specific Architecture Duel", "🏗️", "Technical", "epic");
+        }
+        if (gamification.totalXp >= 8000) {
+            awardBadge("grandmaster_crown", "Grandmaster Apex", "Reached Grandmaster rank tier (8,000+ XP)", "🏆", "Excellence", "legendary");
         }
 
         // Add ranking history snapshot
@@ -534,7 +555,7 @@ const getLeaderboard = async (req, res) => {
 
         // Fetch top gamification profiles
         const topProfiles = await UserGamification.find()
-            .populate("userId", "name email role")
+            .populate("userId", "name email role avatar")
             .sort({ totalXp: -1 })
             .limit(50);
 
@@ -548,12 +569,14 @@ const getLeaderboard = async (req, res) => {
                 userId: p.userId._id,
                 name: p.userId.name || "Anonymous Challenger",
                 role: p.userId.role || "student",
+                avatar: p.userId.avatar || "",
                 xp: p.totalXp,
                 tier: p.currentRank,
                 level: p.level,
                 streak: p.currentStreak,
                 challengesCompleted: p.challengesCompleted,
                 badgesCount: (p.badges || []).length,
+                pinnedBadgeId: p.pinnedBadgeId || "welcome_challenger",
                 isCurrentUser
             };
         });
@@ -578,6 +601,7 @@ const getLeaderboard = async (req, res) => {
                         streak: userGam.currentStreak,
                         challengesCompleted: userGam.challengesCompleted,
                         badgesCount: (userGam.badges || []).length,
+                        pinnedBadgeId: userGam.pinnedBadgeId || "welcome_challenger",
                         isCurrentUser: true
                     };
                 }
@@ -606,12 +630,14 @@ const getUserStats = async (req, res) => {
                 level: 1,
                 currentStreak: 0,
                 maxStreak: 0,
+                pinnedBadgeId: "welcome_challenger",
                 badges: [{
                     badgeId: "welcome_challenger",
                     name: "Arena Initiate",
                     description: "Enrolled in the Peer Challenge Arena",
                     icon: "⚔️",
-                    category: "General",
+                    category: "Milestone",
+                    rarity: "common",
                     unlockedAt: new Date()
                 }]
             });
@@ -623,22 +649,180 @@ const getUserStats = async (req, res) => {
             .sort({ submittedAt: -1 })
             .limit(10);
 
-        // Calculate all standard badges with unlock status
-        const allBadgesCatalog = [
-            { badgeId: "welcome_challenger", name: "Arena Initiate", description: "Enrolled in the Peer Challenge Arena", icon: "⚔️", category: "General" },
-            { badgeId: "first_blood", name: "First Arena Battle", description: "Complete your very first challenge", icon: "🎯", category: "General" },
-            { badgeId: "streak_3", name: "3-Day Fire Streak", description: "Maintain a 3-day challenge streak", icon: "🔥", category: "Streaks" },
-            { badgeId: "streak_7", name: "Weekly Ironclad", description: "Maintain a 7-day challenge streak", icon: "⚡", category: "Streaks" },
-            { badgeId: "challenger_5", name: "Seasoned Duelist", description: "Complete 5 mock challenges", icon: "🛡️", category: "Volume" },
-            { badgeId: "tech_titan", name: "Technical Titan", description: "Score 85%+ on Technical Challenge", icon: "💻", category: "Technical" },
-            { badgeId: "star_virtuoso", name: "STAR Virtuoso", description: "Score 85%+ on HR Behavioral Challenge", icon: "🌟", category: "HR" },
-            { badgeId: "perfect_centurion", name: "Perfectionist", description: "Score 95%+ on any competitive challenge", icon: "👑", category: "Excellence" }
+        // Complete LeetCode-style Badge Catalog with Dynamic Progress
+        const leetcodeBadgesCatalog = [
+            {
+                badgeId: "welcome_challenger",
+                name: "Arena Initiate",
+                description: "Enrolled in the Peer Challenge Arena",
+                icon: "⚔️",
+                category: "Milestone",
+                rarity: "common",
+                criteria: "Joined the Peer Arena",
+                maxProgress: 1,
+                currentProgress: 1
+            },
+            {
+                badgeId: "first_blood",
+                name: "First Battle",
+                description: "Completed your first live interview challenge",
+                icon: "🎯",
+                category: "Milestone",
+                rarity: "common",
+                criteria: "Complete 1 challenge",
+                maxProgress: 1,
+                currentProgress: Math.min(1, gamification.challengesCompleted || 0)
+            },
+            {
+                badgeId: "streak_3",
+                name: "3-Day Fire",
+                description: "Maintained a 3-day continuous practice streak",
+                icon: "🔥",
+                category: "Streaks",
+                rarity: "rare",
+                criteria: "Reach 3-Day streak",
+                maxProgress: 3,
+                currentProgress: Math.min(3, gamification.currentStreak || 0)
+            },
+            {
+                badgeId: "streak_7",
+                name: "Weekly Ironclad",
+                description: "Maintained a 7-day continuous challenge streak",
+                icon: "⚡",
+                category: "Streaks",
+                rarity: "epic",
+                criteria: "Reach 7-Day streak",
+                maxProgress: 7,
+                currentProgress: Math.min(7, gamification.currentStreak || 0)
+            },
+            {
+                badgeId: "streak_30",
+                name: "Monthly Marathoner",
+                description: "Maintained an unbroken 30-day challenge streak",
+                icon: "🗓️",
+                category: "Streaks",
+                rarity: "legendary",
+                criteria: "Reach 30-Day streak",
+                maxProgress: 30,
+                currentProgress: Math.min(30, gamification.maxStreak || 0)
+            },
+            {
+                badgeId: "challenger_5",
+                name: "Seasoned Duelist",
+                description: "Completed 5 mock challenges across any category",
+                icon: "🗡️",
+                category: "Volume",
+                rarity: "common",
+                criteria: "Complete 5 challenges",
+                maxProgress: 5,
+                currentProgress: Math.min(5, gamification.challengesCompleted || 0)
+            },
+            {
+                badgeId: "challenger_20",
+                name: "Veteran Gladiator",
+                description: "Completed 20 competitive mock rounds",
+                icon: "🎖️",
+                category: "Volume",
+                rarity: "rare",
+                criteria: "Complete 20 challenges",
+                maxProgress: 20,
+                currentProgress: Math.min(20, gamification.challengesCompleted || 0)
+            },
+            {
+                badgeId: "challenger_50",
+                name: "Century Contender",
+                description: "Completed 50 competitive interview challenges",
+                icon: "🛡️",
+                category: "Volume",
+                rarity: "epic",
+                criteria: "Complete 50 challenges",
+                maxProgress: 50,
+                currentProgress: Math.min(50, gamification.challengesCompleted || 0)
+            },
+            {
+                badgeId: "tech_titan",
+                name: "Technical Titan",
+                description: "Scored 85%+ on a High-Difficulty Technical Challenge",
+                icon: "💻",
+                category: "Technical",
+                rarity: "rare",
+                criteria: "Score 85%+ on Technical",
+                maxProgress: 1,
+                currentProgress: (gamification.badges || []).some(b => b.badgeId === "tech_titan") ? 1 : 0
+            },
+            {
+                badgeId: "star_virtuoso",
+                name: "STAR Virtuoso",
+                description: "Scored 85%+ on an HR Behavioral Challenge",
+                icon: "🌟",
+                category: "Behavioral",
+                rarity: "rare",
+                criteria: "Score 85%+ on HR round",
+                maxProgress: 1,
+                currentProgress: (gamification.badges || []).some(b => b.badgeId === "star_virtuoso") ? 1 : 0
+            },
+            {
+                badgeId: "system_architect",
+                name: "System Architect",
+                description: "Completed a Domain-Specific Architecture Tournament",
+                icon: "🏗️",
+                category: "Technical",
+                rarity: "epic",
+                criteria: "Complete Domain challenge",
+                maxProgress: 1,
+                currentProgress: (gamification.categoryStats?.DomainSpecific?.completed || 0) >= 1 ? 1 : 0
+            },
+            {
+                badgeId: "quant_prodigy",
+                name: "Analytical Prodigy",
+                description: "Scored 85%+ on a Logical & Mathematical Aptitude sprint",
+                icon: "🧠",
+                category: "Aptitude",
+                rarity: "rare",
+                criteria: "Score 85%+ on Aptitude",
+                maxProgress: 1,
+                currentProgress: (gamification.badges || []).some(b => b.badgeId === "quant_prodigy") ? 1 : 0
+            },
+            {
+                badgeId: "speed_demon",
+                name: "Speed Demon",
+                description: "Completed a challenge in under 5 minutes with >80% score",
+                icon: "🏎️",
+                category: "Excellence",
+                rarity: "epic",
+                criteria: "<5 mins with 80%+ score",
+                maxProgress: 1,
+                currentProgress: (gamification.badges || []).some(b => b.badgeId === "speed_demon") ? 1 : 0
+            },
+            {
+                badgeId: "perfect_centurion",
+                name: "Perfectionist (100 Club)",
+                description: "Scored 95%+ on a competitive challenge",
+                icon: "👑",
+                category: "Excellence",
+                rarity: "legendary",
+                criteria: "Score 95%+ on any round",
+                maxProgress: 1,
+                currentProgress: (gamification.badges || []).some(b => b.badgeId === "perfect_centurion") ? 1 : 0
+            },
+            {
+                badgeId: "grandmaster_crown",
+                name: "Grandmaster Apex",
+                description: "Reached Grandmaster rank tier (8,000+ XP)",
+                icon: "🏆",
+                category: "Excellence",
+                rarity: "legendary",
+                criteria: "Reach 8,000 Total XP",
+                maxProgress: 8000,
+                currentProgress: Math.min(8000, gamification.totalXp || 0)
+            }
         ];
 
         const unlockedIds = new Set((gamification.badges || []).map(b => b.badgeId));
-        const badgeShowcase = allBadgesCatalog.map(b => ({
+        const badgeShowcase = leetcodeBadgesCatalog.map(b => ({
             ...b,
             isUnlocked: unlockedIds.has(b.badgeId),
+            isPinned: gamification.pinnedBadgeId === b.badgeId,
             unlockedAt: gamification.badges?.find(ub => ub.badgeId === b.badgeId)?.unlockedAt || null
         }));
 
@@ -650,12 +834,42 @@ const getUserStats = async (req, res) => {
                 currentStreak: gamification.currentStreak,
                 maxStreak: gamification.maxStreak,
                 challengesCompleted: gamification.challengesCompleted,
+                pinnedBadgeId: gamification.pinnedBadgeId || "welcome_challenger",
                 categoryStats: gamification.categoryStats,
                 rankingHistory: gamification.rankingHistory || []
             },
             badges: badgeShowcase,
             recentSubmissions: submissions
         });
+    } catch (err) {
+        console.error("Get user stats error:", err);
+        res.status(500).json({ message: "Error fetching gamification profile", error: err.message });
+    }
+};
+
+// Pin Badge to profile
+const pinBadge = async (req, res) => {
+    try {
+        const { badgeId } = req.body;
+        if (!badgeId) return res.status(400).json({ message: "badgeId is required" });
+
+        const gamification = await UserGamification.findOne({ userId: req.user._id });
+        if (!gamification) return res.status(404).json({ message: "Gamification profile not found" });
+
+        const hasBadge = (gamification.badges || []).some(b => b.badgeId === badgeId);
+        if (!hasBadge) {
+            return res.status(400).json({ message: "You have not unlocked this badge yet." });
+        }
+
+        gamification.pinnedBadgeId = badgeId;
+        await gamification.save();
+
+        res.status(200).json({ message: "Badge pinned to your profile successfully!", pinnedBadgeId: badgeId });
+    } catch (err) {
+        console.error("Pin badge error:", err);
+        res.status(500).json({ message: "Server error pinning badge" });
+    }
+};
     } catch (err) {
         console.error("Get user stats error:", err);
         res.status(500).json({ message: "Error fetching gamification profile", error: err.message });
@@ -782,5 +996,6 @@ module.exports = {
     submitChallenge,
     getLeaderboard,
     getUserStats,
+    pinBadge,
     generateAIChallenge
 };

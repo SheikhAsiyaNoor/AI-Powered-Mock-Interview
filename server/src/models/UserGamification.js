@@ -5,7 +5,12 @@ const badgeSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: { type: String, required: true },
     icon: { type: String, default: "🏆" },
-    category: { type: String, default: "General" },
+    category: { type: String, default: "General" }, // General, Streaks, Technical, HR, Mastery
+    rarity: {
+        type: String,
+        enum: ["common", "rare", "epic", "legendary"],
+        default: "common"
+    },
     unlockedAt: { type: Date, default: Date.now }
 });
 
@@ -28,6 +33,7 @@ const userGamificationSchema = new mongoose.Schema({
     maxStreak: { type: Number, default: 0 },
     lastActiveDate: { type: Date },
     challengesCompleted: { type: Number, default: 0 },
+    pinnedBadgeId: { type: String, default: "welcome_challenger" },
     categoryStats: {
         Technical: { completed: { type: Number, default: 0 }, totalScore: { type: Number, default: 0 } },
         HR: { completed: { type: Number, default: 0 }, totalScore: { type: Number, default: 0 } },

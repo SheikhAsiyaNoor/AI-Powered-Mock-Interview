@@ -5,6 +5,7 @@ const {
     submitChallenge,
     getLeaderboard,
     getUserStats,
+    pinBadge,
     generateAIChallenge
 } = require("../controllers/arenaController");
 const { protect } = require("../middleware/auth");
@@ -18,6 +19,7 @@ router.get("/challenges/:id", protect, getChallengeById);
 router.post("/challenges/:id/submit", protect, submitChallenge);
 router.get("/leaderboard", protect, getLeaderboard);
 router.get("/user-stats", protect, getUserStats);
+router.post("/badges/pin", protect, pinBadge);
 
 // Admin AI Challenge Generation
 router.post("/admin/generate", protect, authorizeRoles("admin"), generateAIChallenge);
