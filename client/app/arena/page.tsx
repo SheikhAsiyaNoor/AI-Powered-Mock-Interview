@@ -273,7 +273,7 @@ export default function ArenaPage() {
                             </span>
                         </h1>
                         <p className="text-muted-foreground text-sm leading-relaxed">
-                            Take AI-generated synchronized challenges across Technical, HR, Aptitude, and Domain rounds. Earn LeetCode-style achievement trophies, maintain streaks, and climb the leaderboard.
+                            Take AI-generated synchronized challenges across Technical, HR, Aptitude, and Domain rounds. Earn exclusive AIPMI Placement Accolades, maintain streaks, and climb the leaderboard.
                         </p>
                     </div>
 
@@ -302,7 +302,7 @@ export default function ArenaPage() {
                                         <span className="text-xl">{pinnedBadge.icon}</span>
                                         <div>
                                             <div className="text-[10px] text-muted-foreground uppercase font-bold flex items-center gap-1">
-                                                <Pin className="w-2.5 h-2.5 text-primary" /> Pinned Trophy
+                                                <Pin className="w-2.5 h-2.5 text-primary" /> Pinned Medallion
                                             </div>
                                             <div className="text-xs font-bold text-foreground">{pinnedBadge.name}</div>
                                         </div>
@@ -349,7 +349,7 @@ export default function ArenaPage() {
                 {[
                     { id: "challenges", label: "Active Challenges", icon: Swords, count: challenges.length },
                     { id: "leaderboard", label: "Global Leaderboard", icon: Trophy, count: leaderboard.length },
-                    { id: "badges", label: "LeetCode Trophy Cabinet", icon: Medal, count: badges.filter(b => b.isUnlocked).length },
+                    { id: "badges", label: "Placement Accolades", icon: Medal, count: badges.filter(b => b.isUnlocked).length },
                     { id: "analytics", label: "Performance & History", icon: TrendingUp },
                 ].map((tab) => {
                     const Icon = tab.icon;
@@ -630,7 +630,7 @@ export default function ArenaPage() {
                 </Card>
             )}
 
-            {/* TAB 3: LEETCODE-STYLE TROPHY CABINET & BADGES */}
+            {/* TAB 3: AIPMI PLACEMENT ACCOLADES & READINESS LAURELS */}
             {activeTab === "badges" && (
                 <div className="space-y-6">
                     {/* Header Banner */}
@@ -638,11 +638,11 @@ export default function ArenaPage() {
                         <div>
                             <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-500 text-xs font-bold uppercase tracking-wider mb-2">
                                 <Trophy className="w-3.5 h-3.5" />
-                                LeetCode-Style Trophy Cabinet
+                                Placement Vanguard Accolades
                             </div>
-                            <h2 className="text-2xl font-extrabold">Achievement Badges & Milestones</h2>
+                            <h2 className="text-2xl font-extrabold">Readiness Laurels & Achievement Medallions</h2>
                             <p className="text-xs text-muted-foreground mt-1">
-                                Earn rare, epic, and legendary badges by conquering interview challenges, maintaining daily streaks, and excelling in technical rounds. Pin your favorite trophy to your profile!
+                                Earn rare, epic, and legendary medallions by conquering interview rounds, maintaining preparation streaks, and demonstrating FAANG-ready mastery. Pin your top accolade to your profile!
                             </p>
                         </div>
 

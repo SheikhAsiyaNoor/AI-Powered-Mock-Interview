@@ -458,7 +458,7 @@ Return ONLY valid JSON in this exact structure without markdown or explanation:
         gamification.currentRank = rank;
         gamification.level = level;
 
-        // Badge Unlocking Logic (LeetCode Style)
+        // Badge Unlocking Logic (AIPMI Placement Accolades)
         const unlockedBadges = [];
         const existingBadgeIds = new Set((gamification.badges || []).map(b => b.badgeId));
 
@@ -471,46 +471,46 @@ Return ONLY valid JSON in this exact structure without markdown or explanation:
         };
 
         if (gamification.challengesCompleted >= 1) {
-            awardBadge("first_blood", "First Battle", "Completed your very first AI challenge", "🎯", "Milestone", "common");
+            awardBadge("first_blood", "First Interview Spar", "Completed your inaugural live interview challenge", "🎯", "Milestone", "common");
         }
         if (gamification.challengesCompleted >= 5) {
-            awardBadge("challenger_5", "Seasoned Duelist", "Completed 5 mock challenges", "🗡️", "Volume", "common");
+            awardBadge("challenger_5", "Round-1 Conqueror", "Completed 5 competitive mock interview rounds", "🗡️", "Volume", "common");
         }
         if (gamification.challengesCompleted >= 20) {
-            awardBadge("challenger_20", "Veteran Gladiator", "Completed 20 competitive mock rounds", "🎖️", "Volume", "rare");
+            awardBadge("challenger_20", "Hiring Manager's Shortlist", "Completed 20 competitive mock evaluations", "🎖️", "Volume", "rare");
         }
         if (gamification.challengesCompleted >= 50) {
-            awardBadge("challenger_50", "Century Contender", "Completed 50 competitive interview challenges", "🛡️", "Volume", "epic");
+            awardBadge("challenger_50", "Placement Vanguard", "Completed 50 rigorous interview evaluations", "🛡️", "Volume", "epic");
         }
         if (newStreak >= 3) {
-            awardBadge("streak_3", "3-Day Fire", "Maintained a 3-day interview practice streak", "🔥", "Streaks", "rare");
+            awardBadge("streak_3", "Placement Momentum", "Maintained a 3-day continuous readiness streak", "🔥", "Streaks", "rare");
         }
         if (newStreak >= 7) {
-            awardBadge("streak_7", "Weekly Ironclad", "Maintained a 7-day challenge streak", "⚡", "Streaks", "epic");
+            awardBadge("streak_7", "Interview Tenacity", "Maintained a 7-day continuous challenge streak", "⚡", "Streaks", "epic");
         }
         if (newStreak >= 30) {
-            awardBadge("streak_30", "Monthly Marathoner", "Maintained an unbroken 30-day streak", "🗓️", "Streaks", "legendary");
+            awardBadge("streak_30", "Offer-Ready Disciplinarian", "Maintained an unbroken 30-day placement practice streak", "🗓️", "Streaks", "legendary");
         }
         if (finalAggregatedScore >= 95) {
-            awardBadge("perfect_centurion", "Perfectionist (100 Club)", "Scored 95%+ on a competitive challenge", "👑", "Excellence", "legendary");
+            awardBadge("perfect_centurion", "Unanimous Strong Hire", "Scored 95%+ across all FAANG evaluation dimensions", "👑", "Excellence", "legendary");
         }
         if (timeSpentSeconds > 0 && timeSpentSeconds <= 300 && finalAggregatedScore >= 80) {
-            awardBadge("speed_demon", "Speed Demon", "Completed a challenge in under 5 minutes with >80% score", "🏎️", "Excellence", "epic");
+            awardBadge("speed_demon", "Rapid Retort", "Completed an interview sprint in under 5 minutes with >80% score", "🏎️", "Excellence", "epic");
         }
         if (challenge.category === "Technical" && finalAggregatedScore >= 85) {
-            awardBadge("tech_titan", "Technical Titan", "Mastered a High-Difficulty Technical Challenge", "💻", "Technical", "rare");
+            awardBadge("tech_titan", "Silicon Valley Algorist", "Scored 85%+ on a High-Difficulty Technical Challenge", "💻", "Technical", "rare");
         }
         if (challenge.category === "HR" && finalAggregatedScore >= 85) {
-            awardBadge("star_virtuoso", "STAR Virtuoso", "Flawless behavioral storytelling evaluation", "🌟", "Behavioral", "rare");
+            awardBadge("star_virtuoso", "STAR Method Orator", "Scored 85%+ on Behavioral Leadership storytelling", "🌟", "Behavioral", "rare");
         }
         if (challenge.category === "Aptitude" && finalAggregatedScore >= 85) {
-            awardBadge("quant_prodigy", "Analytical Prodigy", "Mastered a Logical Aptitude sprint", "🧠", "Aptitude", "rare");
+            awardBadge("quant_prodigy", "Analytical Maestro", "Scored 85%+ on Logical Aptitude & Quant sprint", "🧠", "Aptitude", "rare");
         }
         if (challenge.category === "Domain-Specific" || challenge.category === "DomainSpecific") {
-            awardBadge("system_architect", "System Architect", "Completed a Domain-Specific Architecture Duel", "🏗️", "Technical", "epic");
+            awardBadge("system_architect", "Principal Architect", "Completed a Domain-Specific Architecture Tournament", "🏗️", "Technical", "epic");
         }
         if (gamification.totalXp >= 8000) {
-            awardBadge("grandmaster_crown", "Grandmaster Apex", "Reached Grandmaster rank tier (8,000+ XP)", "🏆", "Excellence", "legendary");
+            awardBadge("grandmaster_crown", "Grandmaster Placement Fellow", "Reached Grandmaster rank tier (8,000+ XP)", "🏆", "Excellence", "legendary");
         }
 
         // Add ranking history snapshot
@@ -633,8 +633,8 @@ const getUserStats = async (req, res) => {
                 pinnedBadgeId: "welcome_challenger",
                 badges: [{
                     badgeId: "welcome_challenger",
-                    name: "Arena Initiate",
-                    description: "Enrolled in the Peer Challenge Arena",
+                    name: "AIPMI Candidate",
+                    description: "Enrolled in the Placement Readiness Arena",
                     icon: "⚔️",
                     category: "Milestone",
                     rarity: "common",
@@ -649,23 +649,23 @@ const getUserStats = async (req, res) => {
             .sort({ submittedAt: -1 })
             .limit(10);
 
-        // Complete LeetCode-style Badge Catalog with Dynamic Progress
-        const leetcodeBadgesCatalog = [
+        // Unique AIPMI Placement Accolades & Readiness Laurels
+        const aipmiBadgesCatalog = [
             {
                 badgeId: "welcome_challenger",
-                name: "Arena Initiate",
-                description: "Enrolled in the Peer Challenge Arena",
+                name: "AIPMI Candidate",
+                description: "Enrolled in the Placement Readiness Arena",
                 icon: "⚔️",
                 category: "Milestone",
                 rarity: "common",
-                criteria: "Joined the Peer Arena",
+                criteria: "Joined the Placement Arena",
                 maxProgress: 1,
                 currentProgress: 1
             },
             {
                 badgeId: "first_blood",
-                name: "First Battle",
-                description: "Completed your first live interview challenge",
+                name: "First Interview Spar",
+                description: "Completed your inaugural live interview challenge",
                 icon: "🎯",
                 category: "Milestone",
                 rarity: "common",
@@ -675,8 +675,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "streak_3",
-                name: "3-Day Fire",
-                description: "Maintained a 3-day continuous practice streak",
+                name: "Placement Momentum",
+                description: "Maintained a 3-day continuous readiness streak",
                 icon: "🔥",
                 category: "Streaks",
                 rarity: "rare",
@@ -686,7 +686,7 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "streak_7",
-                name: "Weekly Ironclad",
+                name: "Interview Tenacity",
                 description: "Maintained a 7-day continuous challenge streak",
                 icon: "⚡",
                 category: "Streaks",
@@ -697,8 +697,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "streak_30",
-                name: "Monthly Marathoner",
-                description: "Maintained an unbroken 30-day challenge streak",
+                name: "Offer-Ready Disciplinarian",
+                description: "Maintained an unbroken 30-day placement practice streak",
                 icon: "🗓️",
                 category: "Streaks",
                 rarity: "legendary",
@@ -708,8 +708,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "challenger_5",
-                name: "Seasoned Duelist",
-                description: "Completed 5 mock challenges across any category",
+                name: "Round-1 Conqueror",
+                description: "Completed 5 competitive mock interview rounds",
                 icon: "🗡️",
                 category: "Volume",
                 rarity: "common",
@@ -719,8 +719,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "challenger_20",
-                name: "Veteran Gladiator",
-                description: "Completed 20 competitive mock rounds",
+                name: "Hiring Manager's Shortlist",
+                description: "Completed 20 competitive mock evaluations",
                 icon: "🎖️",
                 category: "Volume",
                 rarity: "rare",
@@ -730,8 +730,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "challenger_50",
-                name: "Century Contender",
-                description: "Completed 50 competitive interview challenges",
+                name: "Placement Vanguard",
+                description: "Completed 50 rigorous interview evaluations",
                 icon: "🛡️",
                 category: "Volume",
                 rarity: "epic",
@@ -741,7 +741,7 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "tech_titan",
-                name: "Technical Titan",
+                name: "Silicon Valley Algorist",
                 description: "Scored 85%+ on a High-Difficulty Technical Challenge",
                 icon: "💻",
                 category: "Technical",
@@ -752,8 +752,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "star_virtuoso",
-                name: "STAR Virtuoso",
-                description: "Scored 85%+ on an HR Behavioral Challenge",
+                name: "STAR Method Orator",
+                description: "Scored 85%+ on Behavioral Leadership storytelling",
                 icon: "🌟",
                 category: "Behavioral",
                 rarity: "rare",
@@ -763,7 +763,7 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "system_architect",
-                name: "System Architect",
+                name: "Principal Architect",
                 description: "Completed a Domain-Specific Architecture Tournament",
                 icon: "🏗️",
                 category: "Technical",
@@ -774,8 +774,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "quant_prodigy",
-                name: "Analytical Prodigy",
-                description: "Scored 85%+ on a Logical & Mathematical Aptitude sprint",
+                name: "Analytical Maestro",
+                description: "Scored 85%+ on Logical Aptitude & Quant sprint",
                 icon: "🧠",
                 category: "Aptitude",
                 rarity: "rare",
@@ -785,8 +785,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "speed_demon",
-                name: "Speed Demon",
-                description: "Completed a challenge in under 5 minutes with >80% score",
+                name: "Rapid Retort",
+                description: "Completed an interview sprint in under 5 minutes with >80% score",
                 icon: "🏎️",
                 category: "Excellence",
                 rarity: "epic",
@@ -796,8 +796,8 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "perfect_centurion",
-                name: "Perfectionist (100 Club)",
-                description: "Scored 95%+ on a competitive challenge",
+                name: "Unanimous Strong Hire",
+                description: "Scored 95%+ across all FAANG evaluation dimensions",
                 icon: "👑",
                 category: "Excellence",
                 rarity: "legendary",
@@ -807,7 +807,7 @@ const getUserStats = async (req, res) => {
             },
             {
                 badgeId: "grandmaster_crown",
-                name: "Grandmaster Apex",
+                name: "Grandmaster Placement Fellow",
                 description: "Reached Grandmaster rank tier (8,000+ XP)",
                 icon: "🏆",
                 category: "Excellence",
@@ -819,7 +819,7 @@ const getUserStats = async (req, res) => {
         ];
 
         const unlockedIds = new Set((gamification.badges || []).map(b => b.badgeId));
-        const badgeShowcase = leetcodeBadgesCatalog.map(b => ({
+        const badgeShowcase = aipmiBadgesCatalog.map(b => ({
             ...b,
             isUnlocked: unlockedIds.has(b.badgeId),
             isPinned: gamification.pinnedBadgeId === b.badgeId,

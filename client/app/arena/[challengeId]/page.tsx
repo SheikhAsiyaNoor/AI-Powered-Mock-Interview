@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
+import { ProctorWarningModal } from "@/components/ProctorWarningModal";
 
 interface Question {
     questionId: string;
@@ -168,14 +170,14 @@ export default function ChallengeRunnerPage({
         setAnswers(prev => ({ ...prev, [qId]: val }));
     };
 
-    const handleSubmitAnswers = async () => {
+    const handleSubmitAnswers = async (isForcedAutoQuit: boolean = false) => {
         if (!challenge || isSubmitting) return;
         setIsSubmitting(true);
         setError("");
 
         const formattedAnswers = challenge.questions.map(q => ({
             questionId: q.questionId,
-            answer: answers[q.questionId] || ""
+            answer: answers[q.questionId] || (isForcedAutoQuit ? "[Session auto-terminated due to tab switching]" : "")
         }));
 
         const timeSpent = (challenge.timeLimitMinutes * 60) - (timeLeftSeconds || 0);
@@ -193,6 +195,22 @@ export default function ChallengeRunnerPage({
             setIsSubmitting(false);
         }
     };
+
+    // Tab Switch Anti-Cheating Proctoring (4 Warnings -> Auto-Quit)
+    const {
+        switchCount,
+        showWarningModal,
+        isTerminated,
+        terminationMessage,
+        dismissWarning
+    } = useTabSwitchProctor({
+        maxAllowedSwitches: 4,
+        isActive: !evalResult && !isLoading && !!challenge,
+        sessionType: "challenge",
+        onAutoQuit: () => {
+            handleSubmitAnswers(true);
+        }
+    });
 
     if (isLoading || isAuthLoading) {
         return (
@@ -498,7 +516,7 @@ export default function ChallengeRunnerPage({
                             ) : (
                                 <Button
                                     size="sm"
-                                    onClick={handleSubmitAnswers}
+                                    onClick={() => handleSubmitAnswers(false)}
                                     disabled={isSubmitting}
                                     className="rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold px-5 shadow-lg shadow-primary/25 cursor-pointer"
                                 >
@@ -519,6 +537,17 @@ export default function ChallengeRunnerPage({
                     </div>
                 </Card>
             )}
+
+            {/* Anti-Cheating Tab Switch Warning & Disqualification Modal */}
+            <ProctorWarningModal
+                isOpen={showWarningModal}
+                switchCount={switchCount}
+                maxAllowedSwitches={4}
+                isTerminated={isTerminated}
+                terminationMessage={terminationMessage}
+                sessionType="challenge"
+                onDismiss={dismissWarning}
+            />
         </div>
     );
 }

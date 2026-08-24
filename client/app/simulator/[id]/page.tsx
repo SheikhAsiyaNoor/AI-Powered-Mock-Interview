@@ -22,6 +22,8 @@ import {
     Layers,
     ArrowLeft
 } from "lucide-react";
+import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
+import { ProctorWarningModal } from "@/components/ProctorWarningModal";
 
 interface DifficultyHistoryItem {
     questionNumber: number;
@@ -218,6 +220,26 @@ export default function CompanySimulationRoom() {
             </div>
         );
     }
+
+    const handleAutoQuitSimulation = () => {
+        if (session && !session.isComplete) {
+            handleSendAnswer(undefined, "[Session auto-terminated due to multiple tab switch violations.]");
+        }
+    };
+
+    // Tab Switch Anti-Cheating Proctoring (4 Warnings -> Auto-Quit)
+    const {
+        switchCount,
+        showWarningModal,
+        isTerminated,
+        terminationMessage,
+        dismissWarning
+    } = useTabSwitchProctor({
+        maxAllowedSwitches: 4,
+        isActive: isLoggedIn && !loading && !!session && !session.isComplete,
+        sessionType: "interview",
+        onAutoQuit: handleAutoQuitSimulation
+    });
 
     const { company, roundType, domain, currDifficulty, questionsAnswered, messages, isComplete, companyEvaluation, score } = session;
     const currentQNumber = Math.min(5, (questionsAnswered || 0) + 1);
@@ -509,6 +531,17 @@ export default function CompanySimulationRoom() {
                     </form>
                 </div>
             )}
+
+            {/* Anti-Cheating Tab Switch Warning & Disqualification Modal */}
+            <ProctorWarningModal
+                isOpen={showWarningModal}
+                switchCount={switchCount}
+                maxAllowedSwitches={4}
+                isTerminated={isTerminated}
+                terminationMessage={terminationMessage}
+                sessionType="interview"
+                onDismiss={dismissWarning}
+            />
         </div>
     );
 }

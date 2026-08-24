@@ -7,6 +7,8 @@ import { Card } from "@/components/ui/card";
 import ChatContainer, { Message } from "@/components/ui/ChatContainer";
 import InputBox from "@/components/ui/InputBox";
 import axiosInstance from "@/lib/axios";
+import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
+import { ProctorWarningModal } from "@/components/ProctorWarningModal";
 
 interface InterviewSession {
     id: string;
@@ -106,6 +108,38 @@ function InterviewContent() {
     const handleSkipQuestion = () => {
         handleSendMessage("[Skipped Question]");
     };
+
+    const handleAutoQuitInterview = async () => {
+        setIsInterviewComplete(true);
+        if (sessionId) {
+            try {
+                const { data } = await axiosInstance.post("/api/interviews/end", {
+                    sessionId,
+                    forceQuitReason: "Session terminated due to 4 tab-switch violations."
+                });
+                if (data) {
+                    setInterviewScore(data.score || 0);
+                    setProgressionReport("Interview Auto-Terminated: You switched tabs 4 times during the live evaluation.");
+                }
+            } catch (err) {
+                console.error("Error auto-ending interview:", err);
+            }
+        }
+    };
+
+    // Tab Switch Anti-Cheating Proctoring (4 Warnings -> Auto-Quit)
+    const {
+        switchCount,
+        showWarningModal,
+        isTerminated,
+        terminationMessage,
+        dismissWarning
+    } = useTabSwitchProctor({
+        maxAllowedSwitches: 4,
+        isActive: isLoggedIn && !isInterviewComplete && !!sessionId,
+        sessionType: "interview",
+        onAutoQuit: handleAutoQuitInterview
+    });
 
     useEffect(() => {
         if (!authLoading && !isLoggedIn) {
@@ -493,6 +527,17 @@ function InterviewContent() {
                     </Card>
                 </div>
             )}
+
+            {/* Anti-Cheating Tab Switch Warning & Disqualification Modal */}
+            <ProctorWarningModal
+                isOpen={showWarningModal}
+                switchCount={switchCount}
+                maxAllowedSwitches={4}
+                isTerminated={isTerminated}
+                terminationMessage={terminationMessage}
+                sessionType="interview"
+                onDismiss={dismissWarning}
+            />
         </div>
     );
 }
