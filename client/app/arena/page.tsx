@@ -131,9 +131,18 @@ export default function ArenaPage() {
         setIsLoading(true);
         try {
             const [chalRes, leadRes, statsRes] = await Promise.all([
-                axiosInstance.get("/api/arena/challenges"),
-                axiosInstance.get("/api/arena/leaderboard"),
-                axiosInstance.get("/api/arena/user-stats").catch(() => ({ data: { stats: null, badges: [] } }))
+                axiosInstance.get("/api/arena/challenges").catch(err => {
+                    console.error("Error fetching challenges:", err);
+                    return { data: { challenges: [] } };
+                }),
+                axiosInstance.get("/api/arena/leaderboard").catch(err => {
+                    console.error("Error fetching leaderboard:", err);
+                    return { data: { leaderboard: [], userStanding: null } };
+                }),
+                axiosInstance.get("/api/arena/user-stats").catch(err => {
+                    console.error("Error fetching stats:", err);
+                    return { data: { stats: null, badges: [] } };
+                })
             ]);
 
             setChallenges(chalRes.data.challenges || []);
@@ -155,7 +164,7 @@ export default function ArenaPage() {
 
     useEffect(() => {
         loadArenaData();
-    }, [isLoggedIn]);
+    }, [isLoggedIn, user?.id]);
 
     const filteredChallenges = challenges.filter((c) => {
         const matchesCat = categoryFilter === "All" || c.category === categoryFilter;
@@ -318,10 +327,20 @@ export default function ArenaPage() {
 
                     {/* Challenges Grid */}
                     {filteredChallenges.length === 0 ? (
-                        <div className="text-center py-16 text-muted-foreground space-y-3">
-                            <Swords className="w-10 h-10 mx-auto text-muted-foreground/50" />
-                            <p className="font-semibold text-foreground">No active challenges found in this filter.</p>
-                            <p className="text-xs">Check back daily or switch category filters.</p>
+                        <div className="text-center py-16 text-muted-foreground space-y-4">
+                            <Swords className="w-12 h-12 mx-auto text-muted-foreground/40" />
+                            <div className="space-y-1">
+                                <p className="font-bold text-base text-foreground">No active challenges found in this filter.</p>
+                                <p className="text-xs">Click below to sync live challenges with the server.</p>
+                            </div>
+                            <Button
+                                onClick={loadArenaData}
+                                disabled={isLoading}
+                                className="rounded-xl text-xs font-bold bg-primary text-primary-foreground px-4 py-2 cursor-pointer shadow-md"
+                            >
+                                <RefreshCw className={`w-3.5 h-3.5 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                                Sync Live Challenges
+                            </Button>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -369,14 +388,21 @@ export default function ArenaPage() {
 
                                         <div className="pt-4 border-t border-border/30">
                                             <div className="flex items-center justify-between text-xs text-muted-foreground mb-4">
-                                                <span className="flex items-center gap-1.5 font-medium">
-                                                    <Clock className="w-3.5 h-3.5 text-blue-500" /> {challenge.timeLimitMinutes} Mins
+                                                <span className="flex items-center gap-1.5 font-medium" title="Session Time Limit">
+                                                    <Clock className="w-3.5 h-3.5 text-blue-500" /> {challenge.timeLimitMinutes} Mins Session
+                                                </span>
+                                                <span className="flex items-center gap-1 font-semibold text-purple-600 dark:text-purple-400" title="Competition Cycle Window">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    {(() => {
+                                                        const diff = challenge.endDate ? new Date(challenge.endDate).getTime() - Date.now() : 0;
+                                                        if (diff <= 0) return "Active Window";
+                                                        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                                        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                                        return days > 0 ? `${days}d ${hours}h left` : `${hours}h left`;
+                                                    })()}
                                                 </span>
                                                 <span className="flex items-center gap-1 font-bold text-amber-500">
                                                     <Zap className="w-3.5 h-3.5 fill-amber-500" /> +{challenge.xpReward} XP
-                                                </span>
-                                                <span className="flex items-center gap-1.5">
-                                                    <Users className="w-3.5 h-3.5" /> {challenge.participantsCount} Peers
                                                 </span>
                                             </div>
 

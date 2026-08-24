@@ -133,25 +133,33 @@ const SEED_CHALLENGES = [
     }
 ];
 
-// Helper: Ensure Seed Challenges exist
+// Helper: Ensure Seed Challenges exist and are active with synchronized 3-day / 7-day windows
 const ensureActiveChallenges = async () => {
-    const count = await PeerChallenge.countDocuments({ isActive: true });
-    if (count < 4) {
+    try {
         const now = new Date();
-        const endDay = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-        const endWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const end3Days = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000); // 3-Day Competition Window
+        const end7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7-Day Weekly Tournament Window
 
         for (const item of SEED_CHALLENGES) {
             const existing = await PeerChallenge.findOne({ title: item.title });
+            const targetEndDate = item.type === "weekly" ? end7Days : end3Days;
+
             if (!existing) {
                 await PeerChallenge.create({
                     ...item,
                     startDate: now,
-                    endDate: item.type === "weekly" ? endWeek : endDay,
+                    endDate: targetEndDate,
                     isActive: true
                 });
+            } else if (!existing.isActive || !existing.endDate || new Date(existing.endDate) < now) {
+                existing.startDate = now;
+                existing.endDate = targetEndDate;
+                existing.isActive = true;
+                await existing.save();
             }
         }
+    } catch (err) {
+        console.error("Error in ensureActiveChallenges:", err);
     }
 };
 
@@ -738,7 +746,7 @@ Return ONLY a valid JSON object matching this schema without markdown:
         }
 
         const now = new Date();
-        const durationDays = type === "weekly" ? 7 : 1;
+        const durationDays = type === "weekly" ? 7 : 3; // 3 Days for standard challenges, 7 Days for weekly tournaments
         const endDate = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
         const newChallenge = await PeerChallenge.create({
