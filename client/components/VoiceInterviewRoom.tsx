@@ -95,13 +95,20 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
     const [isEditingTranscript, setIsEditingTranscript] = useState(false);
     const [activeTab, setActiveTab] = useState<"question" | "feedback">("question");
 
-    // Clean up all audio/speech synthesis when leaving voice room
+    // Clean up all audio/speech synthesis ONLY when unmounting voice room
+    const stopListeningRef = useRef(stopListening);
+    const stopSpeakingRef = useRef(stopSpeaking);
+    useEffect(() => {
+        stopListeningRef.current = stopListening;
+        stopSpeakingRef.current = stopSpeaking;
+    });
+
     useEffect(() => {
         return () => {
-            stopListening();
-            stopSpeaking();
+            stopListeningRef.current?.();
+            stopSpeakingRef.current?.();
         };
-    }, [stopListening, stopSpeaking]);
+    }, []);
 
     // Coordinated sequential auto-speak: Speaks feedback first (if any), then speaks the next question
     const lastSpokenKeyRef = useRef<string>("");

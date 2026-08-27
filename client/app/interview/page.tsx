@@ -172,14 +172,6 @@ function InterviewContent() {
         return () => clearInterval(t);
     }, [isInterviewComplete]);
 
-    // Ensure all audio and microphone streams are stopped when leaving page
-    useEffect(() => {
-        return () => {
-            voice.stopListening();
-            voice.stopSpeaking();
-        };
-    }, [voice]);
-
     const startInterview = async () => {
         try {
             setIsLoading(true);

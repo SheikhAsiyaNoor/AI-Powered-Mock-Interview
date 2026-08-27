@@ -246,6 +246,8 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
         };
     }, []);
 
+    const isListeningIntentRef = useRef(false);
+
     // Initialize STT
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -282,18 +284,30 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
                 };
 
                 rec.onerror = (event: any) => {
-                    console.warn("Speech recognition notice/error:", event.error);
                     if (event.error === "not-allowed") {
-                        setMicError("Microphone access denied. Please allow microphone permissions.");
+                        setMicError("Microphone access denied. Please allow microphone permissions in your browser.");
+                        isListeningIntentRef.current = false;
                         setIsListening(false);
                     } else if (event.error === "no-speech") {
-                        // Soft error, keep listening
+                        // Soft timeout by browser on silence; keep listening if user intended
+                        if (isListeningIntentRef.current) {
+                            try {
+                                rec.start();
+                            } catch (e) {}
+                        }
                     } else {
-                        setIsListening(false);
+                        console.warn("Speech recognition notice:", event.error);
                     }
                 };
 
                 rec.onend = () => {
+                    // Auto-resume if user still intends to listen (handles browser silence cuts)
+                    if (isListeningIntentRef.current) {
+                        try {
+                            rec.start();
+                            return;
+                        } catch (e) {}
+                    }
                     setIsListening(false);
                     setInterimTranscript("");
                 };
@@ -303,6 +317,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
         }
 
         return () => {
+            isListeningIntentRef.current = false;
             if (recognitionRef.current) {
                 try {
                     recognitionRef.current.abort();
@@ -505,19 +520,21 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
             return;
         }
 
+        isListeningIntentRef.current = true;
+
         // If AI is speaking, stop it so mic doesn't catch AI voice
         stopSpeaking();
 
         try {
             recognitionRef.current.start();
-            startAudioAnalyzer();
         } catch (err: any) {
             // Already started or restarting
-            console.warn("Recognition start notice:", err);
         }
+        startAudioAnalyzer();
     }, [stopSpeaking]);
 
     const stopListening = useCallback(() => {
+        isListeningIntentRef.current = false;
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
