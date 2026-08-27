@@ -25,6 +25,7 @@ import {
     ListPlus,
     Wand2
 } from "lucide-react";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface Interview {
     id: string;
@@ -816,10 +817,14 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                             className={`p-3.5 rounded-2xl text-xs leading-relaxed max-w-[85%] ${
                                                 msg.role === "user"
                                                     ? "bg-blue-600 text-white rounded-br-xs"
-                                                    : "bg-muted/50 border border-border/60 text-foreground rounded-bl-xs whitespace-pre-line"
+                                                    : "bg-muted/50 border border-border/60 text-foreground rounded-bl-xs"
                                             }`}
                                         >
-                                            {msg.content}
+                                            {msg.role === "assistant" ? (
+                                                <MarkdownRenderer content={msg.content} />
+                                            ) : (
+                                                <div className="whitespace-pre-line">{msg.content}</div>
+                                            )}
                                         </div>
                                     </div>
                                 ))}

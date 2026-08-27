@@ -157,3 +157,59 @@
 ::-webkit-scrollbar-thumb:hover {
   background: var(--ring);
 }
+
+/* Markdown Prose Typography & Tables */
+.markdown-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.markdown-prose th,
+.markdown-prose td {
+  border: 1px solid var(--border);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.markdown-prose th {
+  background: var(--muted);
+  font-weight: 700;
+}
+
+.markdown-prose ul {
+  list-style-type: disc;
+  margin-left: 1.25rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.markdown-prose ol {
+  list-style-type: decimal;
+  margin-left: 1.25rem;
+  margin-top: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.markdown-prose blockquote {
+  border-left: 4px solid var(--primary);
+  padding-left: 0.75rem;
+  margin: 0.5rem 0;
+  font-style: italic;
+  opacity: 0.85;
+}
+
+.markdown-prose .katex-block {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  background: var(--muted);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.markdown-prose .katex-inline {
+  padding: 0 0.2rem;
+}

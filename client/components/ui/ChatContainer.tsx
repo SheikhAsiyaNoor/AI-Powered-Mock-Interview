@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { cleanTextForSpeech } from "@/hooks/useVoiceInterview";
 
 export interface Message {
     id: string;
@@ -33,12 +35,7 @@ const ChatContainer = ({ messages, isLoading, onSpeakMessage, speakingMessageId 
         window.speechSynthesis.cancel();
         setCurrentlyPlayingId(id);
 
-        const cleanText = text
-            .replace(/```[\s\S]*?```/g, "Code block omitted.")
-            .replace(/`([^`]+)`/g, "$1")
-            .replace(/[*#_~]/g, "")
-            .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-            .trim();
+        const cleanText = cleanTextForSpeech(text);
 
         const utterance = new SpeechSynthesisUtterance(cleanText);
         utterance.rate = 1.0;
@@ -117,7 +114,11 @@ const ChatContainer = ({ messages, isLoading, onSpeakMessage, speakingMessageId 
                                     </span>
                                 )}
                             </div>
-                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            {message.isUser ? (
+                                <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                            ) : (
+                                <MarkdownRenderer content={message.content} />
+                            )}
                         </div>
                     </div>
                 );

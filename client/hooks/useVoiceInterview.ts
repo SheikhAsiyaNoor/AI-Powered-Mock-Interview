@@ -9,6 +9,96 @@ export interface VoiceOption {
     gender?: "female" | "male";
 }
 
+// Natural Speech Sanitizer: Translates code/math symbols into natural spoken English
+export function cleanTextForSpeech(raw: string): string {
+    if (!raw) return "";
+
+    let text = raw;
+
+    // 1. Remove multi-line code blocks
+    text = text.replace(/```[\s\S]*?```/g, " [Code snippet omitted] ");
+
+    // 2. Markdown links: [Title](URL) -> Title
+    text = text.replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1");
+
+    // 3. Inline formatting (backticks, bold, italic, strikethrough, hashtags)
+    text = text.replace(/`([^`]+)`/g, "$1");
+    text = text.replace(/[*_~#]/g, "");
+
+    // 4. Big O Notation -> Natural English
+    text = text.replace(/\bO\s*\(\s*1\s*\)/gi, "O of 1 constant time");
+    text = text.replace(/\bO\s*\(\s*log\s*n\s*\)/gi, "O of log n logarithmic time");
+    text = text.replace(/\bO\s*\(\s*n\s*\)/gi, "O of n linear time");
+    text = text.replace(/\bO\s*\(\s*n\s*log\s*n\s*\)/gi, "O of n log n linearithmic time");
+    text = text.replace(/\bO\s*\(\s*n\s*\^\s*2\s*\)/gi, "O of n squared quadratic time");
+    text = text.replace(/\bO\s*\(\s*n\s*\^\s*3\s*\)/gi, "O of n cubed");
+    text = text.replace(/\bO\s*\(\s*2\s*\^\s*n\s*\)/gi, "O of 2 to the n exponential time");
+    text = text.replace(/\bO\s*\(\s*n\s*!\s*\)/gi, "O of n factorial");
+    text = text.replace(/\bO\s*\(\s*([^()]+)\s*\)/gi, "O of $1");
+
+    // 5. LaTeX and Math expressions
+    text = text.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, "$1 divided by $2");
+    text = text.replace(/\\sqrt\{([^}]+)\}/g, "square root of $1");
+    text = text.replace(/\\sum/g, "summation");
+    text = text.replace(/\\int/g, "integral");
+    text = text.replace(/\\pi/g, "pi");
+    text = text.replace(/\\theta/g, "theta");
+    text = text.replace(/\\alpha/g, "alpha");
+    text = text.replace(/\\beta/g, "beta");
+    text = text.replace(/\\times/g, " times ");
+    text = text.replace(/\\div/g, " divided by ");
+    text = text.replace(/\\pm/g, " plus or minus ");
+    text = text.replace(/\\le(q)?/g, " less than or equal to ");
+    text = text.replace(/\\ge(q)?/g, " greater than or equal to ");
+    text = text.replace(/\\neq/g, " not equal to ");
+
+    // 6. Programming Comparison and Logical Operators
+    text = text.replace(/===/g, " strictly equals ");
+    text = text.replace(/!==/g, " strictly does not equal ");
+    text = text.replace(/==/g, " equals ");
+    text = text.replace(/!=/g, " does not equal ");
+    text = text.replace(/>=/g, " is greater than or equal to ");
+    text = text.replace(/<=/g, " is less than or equal to ");
+    text = text.replace(/&&/g, " and ");
+    text = text.replace(/\|\|/g, " or ");
+    text = text.replace(/=>|->/g, " points to ");
+    text = text.replace(/\+\+/g, " increment ");
+    text = text.replace(/--/g, " decrement ");
+    text = text.replace(/\+=/g, " plus equals ");
+    text = text.replace(/-=/g, " minus equals ");
+    text = text.replace(/\*=/g, " times equals ");
+    text = text.replace(/\/=/g, " divided by equals ");
+
+    // 7. General Math, Currency, and Punctuation Symbols
+    text = text.replace(/(\d+)\s*%/g, "$1 percent");
+    text = text.replace(/%/g, " percent ");
+    text = text.replace(/\$(\d+(\.\d+)?)/g, "$1 dollars");
+    text = text.replace(/\$/g, "");
+    text = text.replace(/\+/g, " plus ");
+    text = text.replace(/&/g, " and ");
+    text = text.replace(/@/g, " at ");
+    text = text.replace(/#/g, " number ");
+    text = text.replace(/\^(\d+)/g, " to the power of $1");
+    text = text.replace(/\^/g, " to the power of ");
+    text = text.replace(/~/g, " approximately ");
+    text = text.replace(/>/g, " greater than ");
+    text = text.replace(/</g, " less than ");
+    text = text.replace(/=/g, " equals ");
+    text = text.replace(/\//g, " slash ");
+    text = text.replace(/\\/g, " backslash ");
+    text = text.replace(/\|/g, " or ");
+
+    // 8. Clean brackets, braces, and excess punctuation
+    text = text.replace(/[{}[\]]/g, " ");
+    text = text.replace(/[()]/g, ", ");
+    text = text.replace(/_{2,}/g, " ");
+    text = text.replace(/\s+/g, " ");
+    text = text.replace(/,\s*,+/g, ",");
+    text = text.replace(/\.\s*\.+/g, ".");
+
+    return text.trim();
+}
+
 interface UseVoiceInterviewOptions {
     autoSpeak?: boolean;
     initialRate?: number;
@@ -232,13 +322,8 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
             // Stop any ongoing speech
             synthRef.current.cancel();
 
-            // Clean text from markdown formatting or tags for cleaner natural speech
-            const cleanText = text
-                .replace(/```[\s\S]*?```/g, "Code block omitted.")
-                .replace(/`([^`]+)`/g, "$1")
-                .replace(/[*#_~]/g, "")
-                .replace(/\[([^\]]+)\]\([^\)]+\)/g, "$1")
-                .trim();
+            // Convert symbols, operators, and math to fluent natural spoken English
+            const cleanText = cleanTextForSpeech(text);
 
             if (!cleanText) return;
 

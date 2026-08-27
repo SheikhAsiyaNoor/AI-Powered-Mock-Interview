@@ -26,6 +26,8 @@ import {
 } from "lucide-react";
 import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
 import { ProctorWarningModal } from "@/components/ProctorWarningModal";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { cleanTextForSpeech } from "@/hooks/useVoiceInterview";
 
 interface DifficultyHistoryItem {
     questionNumber: number;
@@ -469,7 +471,8 @@ export default function CompanySimulationRoom() {
                                                     onClick={() => {
                                                         if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
                                                         window.speechSynthesis.cancel();
-                                                        const utterance = new SpeechSynthesisUtterance(msg.content);
+                                                        const cleanText = cleanTextForSpeech(msg.content);
+                                                        const utterance = new SpeechSynthesisUtterance(cleanText);
                                                         utterance.rate = 1.0;
                                                         window.speechSynthesis.speak(utterance);
                                                     }}
@@ -482,7 +485,11 @@ export default function CompanySimulationRoom() {
                                             )}
                                         </div>
 
-                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        {isRecruiter ? (
+                                            <MarkdownRenderer content={msg.content} />
+                                        ) : (
+                                            <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        )}
                                         {msg.difficulty && (
                                             <span className="text-[9px] opacity-70 mt-1.5 block font-mono font-bold">
                                                 Difficulty Tier: {msg.difficulty}
