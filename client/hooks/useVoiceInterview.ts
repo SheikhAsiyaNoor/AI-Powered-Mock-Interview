@@ -11,9 +11,14 @@ export interface VoiceOption {
 
 // Natural Speech Sanitizer: Translates code/math symbols into natural spoken English
 export function cleanTextForSpeech(raw: string): string {
-    if (!raw) return "";
+    if (!raw || raw === "undefined" || raw === "null") return "";
 
-    let text = raw;
+    let text = String(raw)
+        .replace(/^undefined\s*:\s*/i, "")
+        .replace(/^undefined\s+/i, "")
+        .replace(/\s+undefined$/i, "");
+
+    if (text.trim() === "undefined" || text.trim() === "null") return "";
 
     // 1. Remove multi-line code blocks
     text = text.replace(/```[\s\S]*?```/g, " [Code snippet omitted] ");

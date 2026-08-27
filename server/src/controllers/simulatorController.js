@@ -19,14 +19,29 @@ const getCompanies = async (req, res) => {
     }
 };
 
+const cleanText = (val, fallback = "") => {
+    if (!val || typeof val !== "string") return fallback;
+    const t = val.trim();
+    return t === "undefined" || t === "null" ? fallback : t;
+};
+
 // Helper to generate company-specific system prompt
 const getCompanySystemPrompt = (companyConfig, domain, roundType, difficulty, askedQuestions = []) => {
     const guideline = companyConfig?.systemPromptGuideline || "You are a senior technical interviewer.";
-    const companyName = companyConfig?.name || "Tech Company";
+    const companyName = cleanText(companyConfig?.name, "Tech Company");
+    const cleanDomain = cleanText(domain, "Software Engineering");
+    const cleanRound = cleanText(roundType, "Technical Round");
+    const cleanDiff = cleanText(difficulty, "Medium");
+    const questions = (Array.isArray(askedQuestions) ? askedQuestions : [])
+        .filter((q) => q && typeof q === "string" && q.trim() !== "undefined" && q.trim() !== "null");
+
+    const historySection = questions.length > 0
+        ? `\n- Do NOT repeat any previously asked questions:\n${questions.map((q, i) => `${i + 1}. "${q}"`).join("\n")}`
+        : "";
 
     return `
-You are an expert recruitment interviewer at ${companyName} conducting a "${roundType}" interview for a ${domain} role.
-Current Adaptive Difficulty Level: ${difficulty}
+You are an expert recruitment interviewer at ${companyName} conducting a "${cleanRound}" interview for a ${cleanDomain} role.
+Current Adaptive Difficulty Level: ${cleanDiff}
 
 COMPANY SPECIFIC INTERVIEW GUIDELINES:
 ${guideline}
@@ -38,9 +53,7 @@ RULES:
 - For Amazon: Frame questions or expect answers around real-world customer impact and Amazon Leadership Principles (Customer Obsession, Ownership, Bias for Action).
 - For TCS/Infosys: Ask strong core CS fundamentals (OOP, DBMS, SQL joins, OS) and academic/practical project architecture.
 - For Startups: Ask practical full-stack debugging, rapid feature implementation, and API trade-offs.
-- For Goldman Sachs: Focus on low-latency systems, concurrency/multithreading, and ACID data integrity.
-- Do NOT repeat any previously asked questions:
-${askedQuestions.map((q, i) => `${i + 1}. "${q}"`).join("\n")}
+- For Goldman Sachs: Focus on low-latency systems, concurrency/multithreading, and ACID data integrity.${historySection}
 
 Return ONLY the question text with NO conversational preamble, headers, or chit-chat.
 `.trim();
@@ -104,7 +117,7 @@ const startCompanyInterview = async (req, res) => {
 // POST /api/simulator/submit-answer - Process candidate answer with company rubric
 const submitCompanyAnswer = async (req, res) => {
     try {
-        const { sessionId, answer, questionsAnswered = 0 } = req.body;
+        const { sessionId, answer, questionsAnswered = 0, isVoiceMode = false } = req.body;
 
         if (!answer || typeof answer !== "string" || !answer.trim()) {
             return res.status(400).json({ message: "Answer string is required" });
@@ -130,11 +143,28 @@ const submitCompanyAnswer = async (req, res) => {
             interview.skippedQuestionsCount = (interview.skippedQuestionsCount || 0) + 1;
         } else {
             try {
+                const voiceModeRules = isVoiceMode
+                    ? `
+                    INPUT MODE: VOICE MODE (Automatic Speech-to-Text Transcription)
+                    CRITICAL INSTRUCTIONS FOR VOICE MODE:
+                    - The candidate spoke this response verbally, transcribed by Speech-to-Text (STT).
+                    - STT models frequently produce phonetic mistranscriptions (e.g. "no sequel" for "NoSQL", "sink" for "sync", "pie thon" for "Python", "o of n" for "O(n)", "Jason" for "JSON", "sea plus plus" for "C++"), missing punctuation, and minor grammar oddities.
+                    - You MUST IGNORE ALL spelling mistakes, phonetic transcription errors, missing punctuation, capitalization, and minor speech disfluencies.
+                    - Base your evaluation 100% on the candidate's CONCEPTUAL INTENT, technical reasoning, company alignment, and logical substance.
+                    - Under NO circumstances deduct points or downgrade the candidate for spelling or STT transcription artifacts.
+                    `
+                    : `
+                    INPUT MODE: TEXT / CHAT MODE
+                    - Evaluate technical correctness, structure, conceptual depth, and communication clarity normally.
+                    `;
+
                 const evalPrompt = `
                 You are a senior hiring committee interviewer at ${company.name}.
                 Evaluate candidate's answer for a ${interview.domain} role in a "${interview.roundType}" at ${currentDiff} difficulty.
                 Question Context: "${interview.askedQuestions[interview.askedQuestions.length - 1] || ''}"
                 Candidate Answer: "${answer}"
+
+                ${voiceModeRules}
 
                 COMPANY EVALUATION CRITERIA:
                 ${company.systemPromptGuideline}

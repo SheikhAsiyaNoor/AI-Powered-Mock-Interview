@@ -14,10 +14,15 @@ interface MarkdownRendererProps {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = "" }) => {
     const htmlContent = useMemo(() => {
-        if (!content) return "";
+        if (!content || content === "undefined" || content === "null") return "";
 
-        // 1. Math preprocessing with KaTeX
-        let processed = content;
+        // Remove accidental "undefined" or "null" artifacts from AI responses
+        let processed = String(content)
+            .replace(/^undefined\s*:\s*/i, "")
+            .replace(/^undefined\s+/i, "")
+            .replace(/\s+undefined$/i, "");
+
+        if (processed.trim() === "undefined" || processed.trim() === "null") return "";
 
         // Block Math: $$ ... $$
         processed = processed.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {

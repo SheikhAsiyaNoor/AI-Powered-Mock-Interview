@@ -97,6 +97,8 @@ export default function CompanySimulationRoom() {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [session?.messages]);
 
+    const usedVoiceForAnswerRef = useRef(false);
+
     // Speech recognition setup
     useEffect(() => {
         if (typeof window !== "undefined" && ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
@@ -110,6 +112,7 @@ export default function CompanySimulationRoom() {
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     transcript += event.results[i][0].transcript;
                 }
+                usedVoiceForAnswerRef.current = true;
                 setAnswerText((prev) => `${prev} ${transcript}`.trim());
             };
 
@@ -164,6 +167,8 @@ export default function CompanySimulationRoom() {
         const textToSend = customAnswer || answerText;
         if (!textToSend.trim() || submitting || !session) return;
 
+        const wasVoiceUsed = usedVoiceForAnswerRef.current;
+
         if (isListening && recognitionRef.current) {
             recognitionRef.current.stop();
             setIsListening(false);
@@ -176,11 +181,13 @@ export default function CompanySimulationRoom() {
             const res = await api.post("/api/simulator/submit-answer", {
                 sessionId: session._id,
                 answer: textToSend,
-                questionsAnswered: currentCount
+                questionsAnswered: currentCount,
+                isVoiceMode: wasVoiceUsed
             });
 
             if (res.data) {
                 setAnswerText("");
+                usedVoiceForAnswerRef.current = false;
                 fetchSession();
                 return;
             }

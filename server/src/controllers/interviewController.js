@@ -8,16 +8,32 @@ const groq = new Groq({
 
 const GROQ_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-20b";
 
-const systemPrompt = (domain, difficulty, askedQuestionsList = []) => `
-You are a senior technical interviewer conducting a mock interview for a ${domain} developer role. 
-Current Question Difficulty Level: ${difficulty}
+const cleanText = (val, fallback = "") => {
+    if (!val || typeof val !== "string") return fallback;
+    const t = val.trim();
+    return t === "undefined" || t === "null" ? fallback : t;
+};
+
+const systemPrompt = (domain = "General", difficulty = "Medium", askedQuestionsList = []) => {
+    const cleanDomain = cleanText(domain, "General");
+    const cleanDiff = cleanText(difficulty, "Medium");
+    const questions = (Array.isArray(askedQuestionsList) ? askedQuestionsList : [])
+        .filter((q) => q && typeof q === "string" && q.trim() !== "undefined" && q.trim() !== "null");
+
+    const historySection = questions.length > 0
+        ? `\n- DON'T Repeat any of these previously asked questions:\n${questions.map((q, i) => `${i + 1}. "${q}"`).join("\n")}`
+        : "";
+
+    return `
+You are a senior technical interviewer conducting a mock interview for a ${cleanDomain} developer role. 
+Current Question Difficulty Level: ${cleanDiff}
 
 RULES:
--Ask one clear, specific technical question at a time. After the candidate answers, provide feedback and the next question.
--DON'T ask generic questions like "Tell me about yourself"; strictly ask questions based on Domain selected.
--DON'T Repeat any of these previously asked questions: ${askedQuestionsList.map((q, i) => `${i + 1}."${q}"`).join('\n')}
+- Ask one clear, specific technical question at a time. After the candidate answers, provide feedback and the next question.
+- DON'T ask generic questions like "Tell me about yourself"; strictly ask questions based on Domain selected.${historySection}
 Return ONLY the question and nothing else (with no conversational preamble or markdown headers).
 `.trim();
+};
 
 const startInterview = async (req, res) => {
     try {
@@ -64,6 +80,7 @@ const submitAnswer = async (req, res) => {
             domain = "General",
             questionsAnswered = 0,
             isSkipped = false,
+            isVoiceMode = false,
         } = req.body;
 
         if (!answer || typeof answer !== "string" || !answer.trim()) {
@@ -95,6 +112,21 @@ const submitAnswer = async (req, res) => {
             if (interview) interview.skippedQuestionsCount = (interview.skippedQuestionsCount || 0) + 1;
         } else {
             try {
+                const voiceModeRules = isVoiceMode
+                    ? `
+                        INPUT MODE: VOICE MODE (Automatic Speech-to-Text Transcription)
+                        CRITICAL INSTRUCTIONS FOR VOICE MODE:
+                        - The candidate spoke this response verbally, transcribed automatically by Speech-to-Text (STT).
+                        - STT models frequently introduce phonetic mistranscriptions (e.g. "no sequel" for "NoSQL", "sink" for "sync", "pie thon" for "Python", "o of n" for "O(n)", "Jason" for "JSON", "sea plus plus" for "C++"), missing punctuation, and spelling anomalies.
+                        - You MUST IGNORE ALL spelling mistakes, phonetic transcription errors, missing punctuation, capitalization, and minor speech disfluencies.
+                        - Base your evaluation 100% on the candidate's CONCEPTUAL INTENT, technical reasoning, domain knowledge, and logical substance.
+                        - Under NO circumstances deduct points or downgrade the candidate for spelling or STT artifacts.
+                    `
+                    : `
+                        INPUT MODE: TEXT / CHAT MODE
+                        - Evaluate technical correctness, structure, conceptual depth, and communication clarity normally.
+                    `;
+
                 const evalResponse = await groq.chat.completions.create({
                     model: GROQ_MODEL,
                     messages: [
@@ -105,8 +137,10 @@ const submitAnswer = async (req, res) => {
                         Previous question context: "${interview?.askedQuestions?.[interview.askedQuestions.length - 1] || ''}"
                         Candidate's Answer: "${answer}"
 
+                        ${voiceModeRules}
+
                         EVALUATION RULES:
-                        - If the answer is gibberish, random keyboard smash (e.g. "asdfghjk"), off-topic, empty, or completely nonsensical:
+                        - If the answer is gibberish, random keyboard mash (e.g. "asdfghjk"), off-topic, empty, or completely nonsensical:
                           Rate evaluation as "Weak", score: 0 to 10, technicalAccuracy: 0, communicationClarity: 0, problemSolving: 0, and feedback explicitly noting that the response is invalid or unintelligible.
                         - If the answer is partially correct or basic:
                           Rate evaluation as "Medium", score: 40 to 65, technicalAccuracy: 40 to 65, communicationClarity: 50 to 70, problemSolving: 40 to 60.

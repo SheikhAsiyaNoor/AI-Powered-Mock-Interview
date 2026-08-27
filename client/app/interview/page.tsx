@@ -230,6 +230,7 @@ function InterviewContent() {
                 domain,
                 questionsAnswered,
                 isSkipped: isSkippedAction,
+                isVoiceMode: interviewMode === "voice",
             });
 
             if (data) {
