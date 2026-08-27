@@ -27,7 +27,7 @@ import {
 import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
 import { ProctorWarningModal } from "@/components/ProctorWarningModal";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { cleanTextForSpeech } from "@/hooks/useVoiceInterview";
+import { cleanTextForSpeech, playBrowserTTS } from "@/hooks/useVoiceInterview";
 
 interface DifficultyHistoryItem {
     questionNumber: number;
@@ -198,6 +198,26 @@ export default function CompanySimulationRoom() {
         handleSendAnswer(undefined, "skip");
     };
 
+    const handleAutoQuitSimulation = () => {
+        if (session && !session.isComplete) {
+            handleSendAnswer(undefined, "[Session auto-terminated due to multiple tab switch violations.]");
+        }
+    };
+
+    // Tab Switch Anti-Cheating Proctoring (4 Warnings -> Auto-Quit) - MUST be called unconditionally at top level
+    const {
+        switchCount,
+        showWarningModal,
+        isTerminated,
+        terminationMessage,
+        dismissWarning
+    } = useTabSwitchProctor({
+        maxAllowedSwitches: 4,
+        isActive: isLoggedIn && !loading && !!session && !session.isComplete,
+        sessionType: "interview",
+        onAutoQuit: handleAutoQuitSimulation
+    });
+
     if (authLoading || loading) {
         return (
             <div className="min-h-[80vh] flex flex-col items-center justify-center space-y-4 p-8">
@@ -214,36 +234,16 @@ export default function CompanySimulationRoom() {
             <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
                 <XCircle className="w-12 h-12 text-rose-500 mx-auto" />
                 <h2 className="text-xl font-bold text-foreground">Simulation Session Not Found</h2>
-                <p className="text-xs text-muted-foreground">The interview session could not be retrieved.</p>
+                <p className="text-xs text-muted-foreground">{error || "The interview session could not be retrieved from the server."}</p>
                 <button
                     onClick={() => router.push("/simulator")}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold cursor-pointer hover:bg-blue-700 transition"
                 >
                     Back to Simulator Hub
                 </button>
             </div>
         );
     }
-
-    const handleAutoQuitSimulation = () => {
-        if (session && !session.isComplete) {
-            handleSendAnswer(undefined, "[Session auto-terminated due to multiple tab switch violations.]");
-        }
-    };
-
-    // Tab Switch Anti-Cheating Proctoring (4 Warnings -> Auto-Quit)
-    const {
-        switchCount,
-        showWarningModal,
-        isTerminated,
-        terminationMessage,
-        dismissWarning
-    } = useTabSwitchProctor({
-        maxAllowedSwitches: 4,
-        isActive: isLoggedIn && !loading && !!session && !session.isComplete,
-        sessionType: "interview",
-        onAutoQuit: handleAutoQuitSimulation
-    });
 
     const { company, roundType, domain, currDifficulty, questionsAnswered, messages, isComplete, companyEvaluation, score } = session;
     const currentQNumber = Math.min(5, (questionsAnswered || 0) + 1);
@@ -469,12 +469,7 @@ export default function CompanySimulationRoom() {
                                                 <button
                                                     type="button"
                                                     onClick={() => {
-                                                        if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-                                                        window.speechSynthesis.cancel();
-                                                        const cleanText = cleanTextForSpeech(msg.content);
-                                                        const utterance = new SpeechSynthesisUtterance(cleanText);
-                                                        utterance.rate = 1.0;
-                                                        window.speechSynthesis.speak(utterance);
+                                                        playBrowserTTS(msg.content);
                                                     }}
                                                     className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted text-[10px] flex items-center gap-1 cursor-pointer"
                                                     title="Listen to interviewer"

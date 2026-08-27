@@ -99,6 +99,81 @@ export function cleanTextForSpeech(raw: string): string {
     return text.trim();
 }
 
+// Universal Bulletproof TTS Player with Chromium GC Protection & Resume Handling
+export function playBrowserTTS(text: string, onEnd?: () => void, rate: number = 1.0): SpeechSynthesisUtterance | null {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+        if (onEnd) onEnd();
+        return null;
+    }
+
+    const synth = window.speechSynthesis;
+
+    try {
+        synth.cancel();
+        if (synth.paused) {
+            synth.resume();
+        }
+    } catch (e) {}
+
+    const cleanText = cleanTextForSpeech(text);
+    if (!cleanText) {
+        if (onEnd) onEnd();
+        return null;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "en-US";
+    utterance.rate = rate;
+    utterance.pitch = 1.0;
+
+    const voices = synth.getVoices();
+    if (voices.length > 0) {
+        const preferredVoice =
+            voices.find(
+                (v) =>
+                    v.lang.startsWith("en") &&
+                    (v.name.includes("Natural") ||
+                        v.name.includes("Online") ||
+                        v.name.includes("Google") ||
+                        v.name.includes("Samantha") ||
+                        v.name.includes("Jenny") ||
+                        v.name.includes("Guy"))
+            ) ||
+            voices.find((v) => v.lang.startsWith("en")) ||
+            voices[0];
+
+        if (preferredVoice) {
+            utterance.voice = preferredVoice;
+        }
+    }
+
+    // Pin utterance to window to prevent Chromium Garbage Collection bug mid-speech
+    (window as any)._activeTTSUtterance = utterance;
+
+    utterance.onend = () => {
+        (window as any)._activeTTSUtterance = null;
+        if (onEnd) onEnd();
+    };
+
+    utterance.onerror = (e) => {
+        console.warn("TTS playback notice:", e);
+        (window as any)._activeTTSUtterance = null;
+        if (onEnd) onEnd();
+    };
+
+    setTimeout(() => {
+        try {
+            synth.resume();
+            synth.speak(utterance);
+        } catch (err) {
+            console.error("TTS speak failed:", err);
+            if (onEnd) onEnd();
+        }
+    }, 15);
+
+    return utterance;
+}
+
 interface UseVoiceInterviewOptions {
     autoSpeak?: boolean;
     initialRate?: number;
@@ -314,27 +389,62 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
         setMicVolume(0);
     };
 
-    // TTS Control: Speak text
+    const currentUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+    // TTS Control: Speak text with robust error handling
     const speak = useCallback(
         (text: string, onEnd?: () => void) => {
-            if (!synthRef.current || typeof window === "undefined") return;
+            if (!synthRef.current || typeof window === "undefined") {
+                if (onEnd) onEnd();
+                return;
+            }
 
-            // Stop any ongoing speech
-            synthRef.current.cancel();
+            const synth = synthRef.current;
 
-            // Convert symbols, operators, and math to fluent natural spoken English
+            try {
+                synth.cancel();
+                if (synth.paused) {
+                    synth.resume();
+                }
+            } catch (e) {}
+
             const cleanText = cleanTextForSpeech(text);
-
-            if (!cleanText) return;
+            if (!cleanText) {
+                if (onEnd) onEnd();
+                return;
+            }
 
             const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.rate = speechRate;
+            utterance.lang = "en-US";
+            utterance.rate = speechRate || 1.0;
             utterance.pitch = 1.0;
 
-            if (selectedVoiceURI && availableVoices.length > 0) {
-                const voice = availableVoices.find((v) => v.voiceURI === selectedVoiceURI);
-                if (voice) utterance.voice = voice;
+            const voices = availableVoices.length > 0 ? availableVoices : synth.getVoices();
+            if (voices.length > 0) {
+                let chosenVoice = null;
+                if (selectedVoiceURI) {
+                    chosenVoice = voices.find((v) => v.voiceURI === selectedVoiceURI);
+                }
+                if (!chosenVoice) {
+                    chosenVoice =
+                        voices.find(
+                            (v) =>
+                                v.lang.startsWith("en") &&
+                                (v.name.includes("Natural") ||
+                                    v.name.includes("Online") ||
+                                    v.name.includes("Google") ||
+                                    v.name.includes("Samantha"))
+                        ) ||
+                        voices.find((v) => v.lang.startsWith("en")) ||
+                        voices[0];
+                }
+                if (chosenVoice) {
+                    utterance.voice = chosenVoice;
+                }
             }
+
+            currentUtteranceRef.current = utterance;
+            (window as any)._activeTTSUtterance = utterance;
 
             utterance.onstart = () => {
                 setIsSpeaking(true);
@@ -342,23 +452,40 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
 
             utterance.onend = () => {
                 setIsSpeaking(false);
+                currentUtteranceRef.current = null;
+                (window as any)._activeTTSUtterance = null;
                 if (onEnd) onEnd();
             };
 
             utterance.onerror = (e) => {
-                console.error("Speech synthesis error:", e);
+                console.warn("Speech synthesis notice:", e);
                 setIsSpeaking(false);
+                currentUtteranceRef.current = null;
+                (window as any)._activeTTSUtterance = null;
                 if (onEnd) onEnd();
             };
 
-            synthRef.current.speak(utterance);
+            setTimeout(() => {
+                try {
+                    synth.resume();
+                    synth.speak(utterance);
+                } catch (err) {
+                    console.error("Speech synthesis failed to speak:", err);
+                    setIsSpeaking(false);
+                    if (onEnd) onEnd();
+                }
+            }, 15);
         },
         [speechRate, selectedVoiceURI, availableVoices]
     );
 
     const stopSpeaking = useCallback(() => {
         if (synthRef.current) {
-            synthRef.current.cancel();
+            try {
+                synthRef.current.cancel();
+            } catch (e) {}
+            currentUtteranceRef.current = null;
+            (window as any)._activeTTSUtterance = null;
             setIsSpeaking(false);
         }
     }, []);

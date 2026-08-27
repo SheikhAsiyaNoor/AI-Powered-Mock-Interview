@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { Volume2, VolumeX } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { cleanTextForSpeech } from "@/hooks/useVoiceInterview";
+import { cleanTextForSpeech, playBrowserTTS } from "@/hooks/useVoiceInterview";
 
 export interface Message {
     id: string;
@@ -32,19 +32,10 @@ const ChatContainer = ({ messages, isLoading, onSpeakMessage, speakingMessageId 
             return;
         }
 
-        window.speechSynthesis.cancel();
         setCurrentlyPlayingId(id);
-
-        const cleanText = cleanTextForSpeech(text);
-
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-
-        utterance.onend = () => setCurrentlyPlayingId(null);
-        utterance.onerror = () => setCurrentlyPlayingId(null);
-
-        window.speechSynthesis.speak(utterance);
+        playBrowserTTS(text, () => {
+            setCurrentlyPlayingId(null);
+        });
     };
 
     return (
