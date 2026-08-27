@@ -25,6 +25,27 @@ const cleanText = (val, fallback = "") => {
     return t === "undefined" || t === "null" ? fallback : t;
 };
 
+const sanitizeQuestion = (q, fallback) => {
+    if (!q || typeof q !== "string") return fallback;
+    let clean = q.trim();
+    clean = clean.replace(/^(undefined|null)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^(Question\s*\d*|Interviewer|AI|Technical Question|Q\d*)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^["'`]|["'`]$/g, "");
+    clean = clean.trim();
+    if (clean.toLowerCase() === "undefined" || clean.toLowerCase() === "null") return fallback;
+    return clean || fallback;
+};
+
+const sanitizeFeedback = (fb, fallback) => {
+    if (!fb || typeof fb !== "string") return fallback;
+    let clean = fb.trim();
+    clean = clean.replace(/^(undefined|null)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^(Feedback|Evaluation|AI Feedback)\s*[:\-\.]\s*/i, "");
+    clean = clean.trim();
+    if (clean.toLowerCase() === "undefined" || clean.toLowerCase() === "null") return fallback;
+    return clean || fallback;
+};
+
 // Helper to generate company-specific system prompt
 const getCompanySystemPrompt = (companyConfig, domain, roundType, difficulty, askedQuestions = []) => {
     const guideline = companyConfig?.systemPromptGuideline || "You are a senior technical interviewer.";
@@ -84,7 +105,7 @@ const startCompanyInterview = async (req, res) => {
                 ],
                 temperature: 0.7
             });
-            firstQuestion = completion.choices[0]?.message?.content?.trim() || firstQuestion;
+            firstQuestion = sanitizeQuestion(completion.choices[0]?.message?.content, firstQuestion);
         } catch (groqErr) {
             console.error("Groq API error on startCompanyInterview:", groqErr.message || groqErr);
         }
@@ -195,7 +216,7 @@ const submitCompanyAnswer = async (req, res) => {
                 const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
                 evaluation = parsed.evaluation || "Weak";
                 evalScore = Math.max(0, Math.min(100, typeof parsed.score === "number" ? parsed.score : evaluation === "Weak" ? 10 : 65));
-                feedback = parsed.feedback || `Response evaluated against ${company.name}'s engineering standards.`;
+                feedback = sanitizeFeedback(parsed.feedback, `Response evaluated against ${company.name}'s engineering standards.`);
             } catch (groqErr) {
                 console.error("Groq API error on company feedback:", groqErr.message || groqErr);
             }
@@ -355,7 +376,7 @@ const submitCompanyAnswer = async (req, res) => {
                 ],
                 temperature: 0.7
             });
-            nextQuestion = nextQuestionResponse.choices[0]?.message?.content?.trim() || nextQuestion;
+            nextQuestion = sanitizeQuestion(nextQuestionResponse.choices[0]?.message?.content, nextQuestion);
         } catch (groqErr) {
             console.error("Groq API error on company nextQuestion:", groqErr.message || groqErr);
         }

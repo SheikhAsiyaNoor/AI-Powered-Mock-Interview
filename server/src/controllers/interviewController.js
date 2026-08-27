@@ -14,6 +14,27 @@ const cleanText = (val, fallback = "") => {
     return t === "undefined" || t === "null" ? fallback : t;
 };
 
+const sanitizeQuestion = (q, fallback) => {
+    if (!q || typeof q !== "string") return fallback;
+    let clean = q.trim();
+    clean = clean.replace(/^(undefined|null)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^(Question\s*\d*|Interviewer|AI|Technical Question|Q\d*)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^["'`]|["'`]$/g, "");
+    clean = clean.trim();
+    if (clean.toLowerCase() === "undefined" || clean.toLowerCase() === "null") return fallback;
+    return clean || fallback;
+};
+
+const sanitizeFeedback = (fb, fallback) => {
+    if (!fb || typeof fb !== "string") return fallback;
+    let clean = fb.trim();
+    clean = clean.replace(/^(undefined|null)\s*[:\-\.]\s*/i, "");
+    clean = clean.replace(/^(Feedback|Evaluation|AI Feedback)\s*[:\-\.]\s*/i, "");
+    clean = clean.trim();
+    if (clean.toLowerCase() === "undefined" || clean.toLowerCase() === "null") return fallback;
+    return clean || fallback;
+};
+
 const systemPrompt = (domain = "General", difficulty = "Medium", askedQuestionsList = []) => {
     const cleanDomain = cleanText(domain, "General");
     const cleanDiff = cleanText(difficulty, "Medium");
@@ -52,7 +73,7 @@ const startInterview = async (req, res) => {
                 ],
                 temperature: 0.7,
             });
-            firstQuestion = completion.choices[0]?.message?.content || firstQuestion;
+            firstQuestion = sanitizeQuestion(completion.choices[0]?.message?.content, firstQuestion);
         } catch (groqErr) {
             console.error("Groq API error on startInterview:", groqErr.message || groqErr);
         }
@@ -167,7 +188,7 @@ const submitAnswer = async (req, res) => {
                 technicalAccuracy = Math.max(0, Math.min(100, typeof parsed.technicalAccuracy === 'number' ? parsed.technicalAccuracy : evalScore));
                 communicationClarity = Math.max(0, Math.min(100, typeof parsed.communicationClarity === 'number' ? parsed.communicationClarity : evalScore));
                 problemSolving = Math.max(0, Math.min(100, typeof parsed.problemSolving === 'number' ? parsed.problemSolving : evalScore));
-                feedback = parsed.feedback || "Answer evaluated based on technical depth and communication clarity.";
+                feedback = sanitizeFeedback(parsed.feedback, "Answer evaluated based on technical depth and communication clarity.");
             } catch (groqErr) {
                 console.error("Groq API error on feedback:", groqErr.message || groqErr);
             }
@@ -268,7 +289,7 @@ const submitAnswer = async (req, res) => {
             const nextQuestionResponse = await groq.chat.completions.create({
                 model: GROQ_MODEL,
                 messages: [
-                    { role: "system", content: systemPrompt(domain, nextDiff, interview.askedQuestions) },
+                    { role: "system", content: systemPrompt(domain, nextDiff, interview?.askedQuestions || []) },
                     {
                         role: "user",
                         content: `Candidate's previous response was evaluated as ${evaluation}. 
@@ -277,7 +298,7 @@ const submitAnswer = async (req, res) => {
                 ],
                 temperature: 0.7,
             });
-            nextQuestion = nextQuestionResponse.choices[0]?.message?.content?.trim() || nextQuestion;
+            nextQuestion = sanitizeQuestion(nextQuestionResponse.choices[0]?.message?.content, nextQuestion);
         } catch (groqErr) {
             console.error("Groq API error on nextQuestion:", groqErr.message || groqErr);
         }

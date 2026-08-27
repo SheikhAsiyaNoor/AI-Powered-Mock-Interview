@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { cleanDisplayQuestion, cleanDisplayFeedback } from "@/lib/utils";
 
 interface VoiceInterviewRoomProps {
     currentQuestion: string;
@@ -30,18 +31,18 @@ interface VoiceInterviewRoomProps {
     isLoading: boolean;
     isInterviewComplete: boolean;
     onSendAnswer: (answer: string) => void;
-    onSkipQuestion?: () => void;
+    onSkipQuestion: () => void;
     onSwitchToChat: () => void;
-    // Voice Hook properties
+    // useVoiceInterview return values
     isSpeaking: boolean;
     speakingAudioLevel: number;
     speechRate: number;
-    setSpeechRate: (rate: number) => void;
+    setSpeechRate: (r: number) => void;
     availableVoices: SpeechSynthesisVoice[];
     selectedVoiceURI: string;
     setSelectedVoiceURI: (uri: string) => void;
     autoSpeakEnabled: boolean;
-    setAutoSpeakEnabled: (val: boolean) => void;
+    setAutoSpeakEnabled: (v: boolean) => void;
     speak: (text: string, onEnd?: () => void) => void;
     stopSpeaking: () => void;
     isListening: boolean;
@@ -50,6 +51,7 @@ interface VoiceInterviewRoomProps {
     micVolume: number;
     micError: string | null;
     isSTTSupported: boolean;
+    isTTSSupported: boolean;
     startListening: () => void;
     stopListening: () => void;
     resetTranscript: () => void;
@@ -85,11 +87,15 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
     micVolume,
     micError,
     isSTTSupported,
+    isTTSSupported,
     startListening,
     stopListening,
     resetTranscript,
     setManualTranscript,
 }) => {
+    const sanitizedQuestion = cleanDisplayQuestion(currentQuestion, "Tell me about your technical background and experience with " + domain + ".");
+    const sanitizedFeedback = cleanDisplayFeedback(latestFeedback);
+
     const [showSettings, setShowSettings] = useState(false);
     const [autoListenAfterAI, setAutoListenAfterAI] = useState(false);
     const [isEditingTranscript, setIsEditingTranscript] = useState(false);
@@ -114,34 +120,34 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
     const lastSpokenKeyRef = useRef<string>("");
     useEffect(() => {
         if (isInterviewComplete || !autoSpeakEnabled) return;
-        if (!currentQuestion && !latestFeedback) return;
+        if (!sanitizedQuestion && !sanitizedFeedback) return;
 
-        const currentKey = `${latestFeedback || ""}::${currentQuestion || ""}`;
+        const currentKey = `${sanitizedFeedback}::${sanitizedQuestion}`;
         if (currentKey === lastSpokenKeyRef.current) return;
         lastSpokenKeyRef.current = currentKey;
 
-        if (latestFeedback) {
+        if (sanitizedFeedback) {
             setActiveTab("feedback");
-            speak(`Feedback on previous answer: ${latestFeedback}`, () => {
+            speak(`Feedback on previous answer: ${sanitizedFeedback}`, () => {
                 if (isInterviewComplete) return;
                 setActiveTab("question");
-                if (currentQuestion) {
-                    speak(currentQuestion, () => {
+                if (sanitizedQuestion) {
+                    speak(sanitizedQuestion, () => {
                         if (autoListenAfterAI && !isInterviewComplete) {
                             startListening();
                         }
                     });
                 }
             });
-        } else if (currentQuestion) {
+        } else if (sanitizedQuestion) {
             setActiveTab("question");
-            speak(currentQuestion, () => {
+            speak(sanitizedQuestion, () => {
                 if (autoListenAfterAI && !isInterviewComplete) {
                     startListening();
                 }
             });
         }
-    }, [currentQuestion, latestFeedback, autoSpeakEnabled, autoListenAfterAI, speak, startListening, isInterviewComplete]);
+    }, [sanitizedQuestion, sanitizedFeedback, autoSpeakEnabled, autoListenAfterAI, speak, startListening, isInterviewComplete]);
 
     const handleReplayQuestion = () => {
         const textToRead = activeTab === "feedback" && latestFeedback ? latestFeedback : currentQuestion;
@@ -436,15 +442,15 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
                     </div>
 
                     <h3 className="text-base sm:text-lg font-bold text-foreground leading-relaxed px-4">
-                        "{currentQuestion}"
+                        "{sanitizedQuestion}"
                     </h3>
 
-                    {latestFeedback && (
+                    {sanitizedFeedback && (
                         <div className="mt-3 p-3 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200/60 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 text-left max-w-xl mx-auto">
                             <span className="font-bold flex items-center gap-1.5 mb-1">
                                 <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> AI Feedback on Previous Answer:
                             </span>
-                            <p>{latestFeedback}</p>
+                            <p>{sanitizedFeedback}</p>
                         </div>
                     )}
                 </div>

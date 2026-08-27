@@ -12,6 +12,7 @@ import { ProctorWarningModal } from "@/components/ProctorWarningModal";
 import useVoiceInterview from "@/hooks/useVoiceInterview";
 import VoiceInterviewRoom from "@/components/VoiceInterviewRoom";
 import { MessageSquare, Mic } from "lucide-react";
+import { cleanDisplayQuestion, cleanDisplayFeedback } from "@/lib/utils";
 
 interface InterviewSession {
     id: string;
@@ -177,7 +178,7 @@ function InterviewContent() {
             setIsLoading(true);
             const { data } = await axiosInstance.post("/api/interviews/start", { domain });
             if (data) {
-                const initialQ = data.question || "Tell me about your experience with " + domain + ".";
+                const initialQ = cleanDisplayQuestion(data.question, "Tell me about your experience with " + domain + ".");
                 setSessionId(data.sessionId);
                 setQuestionsAnswered(0);
                 setCurrentDifficulty(data.difficulty || "Medium");
@@ -239,14 +240,16 @@ function InterviewContent() {
                 if (data.difficultyHistory) setDifficultyHistory(data.difficultyHistory);
                 if (data.progressionReport) setProgressionReport(data.progressionReport);
                 if (data.nextDifficulty) setCurrentDifficulty(data.nextDifficulty);
-                if (data.feedback) setLatestFeedback(data.feedback);
+                
+                const sanitizedFeedback = cleanDisplayFeedback(data.feedback, "Answer evaluated based on technical depth and communication clarity.");
+                setLatestFeedback(sanitizedFeedback);
                 if (data.dimensionScores) setDimensionScores(data.dimensionScores);
 
                 setMessages((prev) => [
                     ...prev,
                     {
                         id: Date.now().toString(),
-                        content: data.feedback || "Answer evaluated based on technical depth and communication clarity.",
+                        content: sanitizedFeedback,
                         isUser: false,
                         timestamp: new Date(),
                     },
@@ -258,13 +261,14 @@ function InterviewContent() {
                     voice.stopSpeaking();
                     voice.stopListening();
                 } else if (data.nextQuestion) {
-                    setCurrentQuestionText(data.nextQuestion);
+                    const sanitizedNextQ = cleanDisplayQuestion(data.nextQuestion, "What other techniques and best practices would you apply?");
+                    setCurrentQuestionText(sanitizedNextQ);
                     setTimeout(() => {
                         setMessages((prev) => [
                             ...prev,
                             {
                                 id: Date.now().toString(),
-                                content: data.nextQuestion,
+                                content: sanitizedNextQ,
                                 isUser: false,
                                 difficulty: data.nextDifficulty || "Medium",
                                 timestamp: new Date(),
