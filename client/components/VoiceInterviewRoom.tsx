@@ -103,13 +103,30 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
         };
     }, [stopListening, stopSpeaking]);
 
-    // Auto-speak when question changes if enabled
-    const lastSpokenQuestionRef = useRef<string>("");
+    // Coordinated sequential auto-speak: Speaks feedback first (if any), then speaks the next question
+    const lastSpokenKeyRef = useRef<string>("");
     useEffect(() => {
-        if (!currentQuestion || isInterviewComplete) return;
+        if (isInterviewComplete || !autoSpeakEnabled) return;
+        if (!currentQuestion && !latestFeedback) return;
 
-        if (autoSpeakEnabled && currentQuestion !== lastSpokenQuestionRef.current) {
-            lastSpokenQuestionRef.current = currentQuestion;
+        const currentKey = `${latestFeedback || ""}::${currentQuestion || ""}`;
+        if (currentKey === lastSpokenKeyRef.current) return;
+        lastSpokenKeyRef.current = currentKey;
+
+        if (latestFeedback) {
+            setActiveTab("feedback");
+            speak(`Feedback on previous answer: ${latestFeedback}`, () => {
+                if (isInterviewComplete) return;
+                setActiveTab("question");
+                if (currentQuestion) {
+                    speak(currentQuestion, () => {
+                        if (autoListenAfterAI && !isInterviewComplete) {
+                            startListening();
+                        }
+                    });
+                }
+            });
+        } else if (currentQuestion) {
             setActiveTab("question");
             speak(currentQuestion, () => {
                 if (autoListenAfterAI && !isInterviewComplete) {
@@ -117,19 +134,7 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
                 }
             });
         }
-    }, [currentQuestion, autoSpeakEnabled, autoListenAfterAI, speak, startListening, isInterviewComplete]);
-
-    // Handle feedback speaking
-    const lastSpokenFeedbackRef = useRef<string>("");
-    useEffect(() => {
-        if (!latestFeedback || isInterviewComplete) return;
-
-        if (autoSpeakEnabled && latestFeedback !== lastSpokenFeedbackRef.current) {
-            lastSpokenFeedbackRef.current = latestFeedback;
-            setActiveTab("feedback");
-            speak(latestFeedback);
-        }
-    }, [latestFeedback, autoSpeakEnabled, speak, isInterviewComplete]);
+    }, [currentQuestion, latestFeedback, autoSpeakEnabled, autoListenAfterAI, speak, startListening, isInterviewComplete]);
 
     const handleReplayQuestion = () => {
         const textToRead = activeTab === "feedback" && latestFeedback ? latestFeedback : currentQuestion;

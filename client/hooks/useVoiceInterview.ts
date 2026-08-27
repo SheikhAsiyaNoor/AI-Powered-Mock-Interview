@@ -155,10 +155,14 @@ export function playBrowserTTS(text: string, onEnd?: () => void, rate: number = 
         if (onEnd) onEnd();
     };
 
-    utterance.onerror = (e) => {
-        console.warn("TTS playback notice:", e);
+    utterance.onerror = (e: any) => {
+        if (e?.error !== "interrupted" && e?.error !== "canceled") {
+            console.warn("TTS playback notice:", e?.error || e);
+        }
         (window as any)._activeTTSUtterance = null;
-        if (onEnd) onEnd();
+        if (onEnd && e?.error !== "interrupted" && e?.error !== "canceled") {
+            onEnd();
+        }
     };
 
     setTimeout(() => {
@@ -457,12 +461,16 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
                 if (onEnd) onEnd();
             };
 
-            utterance.onerror = (e) => {
-                console.warn("Speech synthesis notice:", e);
+            utterance.onerror = (e: any) => {
+                if (e?.error !== "interrupted" && e?.error !== "canceled") {
+                    console.warn("Speech synthesis notice:", e?.error || e);
+                }
                 setIsSpeaking(false);
                 currentUtteranceRef.current = null;
                 (window as any)._activeTTSUtterance = null;
-                if (onEnd) onEnd();
+                if (onEnd && e?.error !== "interrupted" && e?.error !== "canceled") {
+                    onEnd();
+                }
             };
 
             setTimeout(() => {
