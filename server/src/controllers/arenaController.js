@@ -870,11 +870,6 @@ const pinBadge = async (req, res) => {
         res.status(500).json({ message: "Server error pinning badge" });
     }
 };
-    } catch (err) {
-        console.error("Get user stats error:", err);
-        res.status(500).json({ message: "Error fetching gamification profile", error: err.message });
-    }
-};
 
 // 6. POST /api/arena/admin/generate (AI-Generated Daily/Weekly Challenges)
 const generateAIChallenge = async (req, res) => {
