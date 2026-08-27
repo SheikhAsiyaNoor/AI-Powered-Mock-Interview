@@ -9,6 +9,9 @@ import InputBox from "@/components/ui/InputBox";
 import axiosInstance from "@/lib/axios";
 import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
 import { ProctorWarningModal } from "@/components/ProctorWarningModal";
+import useVoiceInterview from "@/hooks/useVoiceInterview";
+import VoiceInterviewRoom from "@/components/VoiceInterviewRoom";
+import { MessageSquare, Mic } from "lucide-react";
 
 interface InterviewSession {
     id: string;
@@ -104,6 +107,11 @@ function InterviewContent() {
     const [currentDifficulty, setCurrentDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Medium');
     const [difficultyHistory, setDifficultyHistory] = useState<Array<{ questionNumber: number; difficulty: string; evaluation: string; score: number }>>([]);
     const [progressionReport, setProgressionReport] = useState<string>('');
+    const [interviewMode, setInterviewMode] = useState<"chat" | "voice">("chat");
+    const [latestFeedback, setLatestFeedback] = useState<string>("");
+    const [currentQuestionText, setCurrentQuestionText] = useState<string>("");
+
+    const voice = useVoiceInterview({ autoSpeak: true, initialRate: 1.0 });
 
     const handleSkipQuestion = () => {
         handleSendMessage("[Skipped Question]");
@@ -111,6 +119,8 @@ function InterviewContent() {
 
     const handleAutoQuitInterview = async () => {
         setIsInterviewComplete(true);
+        voice.stopSpeaking();
+        voice.stopListening();
         if (sessionId) {
             try {
                 const { data } = await axiosInstance.post("/api/interviews/end", {
@@ -162,13 +172,15 @@ function InterviewContent() {
             setIsLoading(true);
             const { data } = await axiosInstance.post("/api/interviews/start", { domain });
             if (data) {
+                const initialQ = data.question || "Tell me about your experience with " + domain + ".";
                 setSessionId(data.sessionId);
                 setQuestionsAnswered(0);
                 setCurrentDifficulty(data.difficulty || "Medium");
+                setCurrentQuestionText(initialQ);
                 setMessages([
                     {
                         id: "1",
-                        content: data.question || "Tell me about your experience with " + domain + ".",
+                        content: initialQ,
                         isUser: false,
                         difficulty: data.difficulty || "Medium",
                         timestamp: new Date(),
@@ -220,6 +232,7 @@ function InterviewContent() {
                 if (data.difficultyHistory) setDifficultyHistory(data.difficultyHistory);
                 if (data.progressionReport) setProgressionReport(data.progressionReport);
                 if (data.nextDifficulty) setCurrentDifficulty(data.nextDifficulty);
+                if (data.feedback) setLatestFeedback(data.feedback);
 
                 setMessages((prev) => [
                     ...prev,
@@ -234,7 +247,10 @@ function InterviewContent() {
                 if (data.isComplete || newCount >= TOTAL_QUESTIONS) {
                     setInterviewScore(data.score || 75);
                     setIsInterviewComplete(true);
+                    voice.stopSpeaking();
+                    voice.stopListening();
                 } else if (data.nextQuestion) {
+                    setCurrentQuestionText(data.nextQuestion);
                     setTimeout(() => {
                         setMessages((prev) => [
                             ...prev,
@@ -360,6 +376,38 @@ function InterviewContent() {
                 </div>
             )}
 
+            {/* Mode Switcher Tabs */}
+            {!isInterviewComplete && (
+                <div className="flex items-center justify-center gap-1.5 p-1 rounded-2xl bg-muted/60 border border-border/60 max-w-xs mx-auto mb-5">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            setInterviewMode("chat");
+                            voice.stopSpeaking();
+                            voice.stopListening();
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            interviewMode === "chat"
+                                ? "bg-card text-foreground shadow-xs border border-border/40"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <MessageSquare className="w-3.5 h-3.5" /> Chat Mode
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setInterviewMode("voice")}
+                        className={`flex-1 flex items-center justify-center gap-2 py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            interviewMode === "voice"
+                                ? "bg-blue-600 text-white shadow-xs"
+                                : "text-muted-foreground hover:text-foreground"
+                        }`}
+                    >
+                        <Mic className="w-3.5 h-3.5" /> Voice Mode 🎙️
+                    </button>
+                </div>
+            )}
+
             {/* Main Content */}
             <div>
                 {isInterviewComplete ? (
@@ -478,6 +526,25 @@ function InterviewContent() {
                             </Button>
                         </div>
                     </div>
+                ) : interviewMode === "voice" ? (
+                    <VoiceInterviewRoom
+                        currentQuestion={currentQuestionText || "Tell me about your experience with " + domain + "."}
+                        latestFeedback={latestFeedback}
+                        domain={domain}
+                        difficulty={currentDifficulty}
+                        questionsAnswered={questionsAnswered}
+                        totalQuestions={TOTAL_QUESTIONS}
+                        isLoading={isLoading}
+                        isInterviewComplete={isInterviewComplete}
+                        onSendAnswer={handleSendMessage}
+                        onSkipQuestion={handleSkipQuestion}
+                        onSwitchToChat={() => {
+                            setInterviewMode("chat");
+                            voice.stopSpeaking();
+                            voice.stopListening();
+                        }}
+                        {...voice}
+                    />
                 ) : (
                     <>
                         <ChatContainer messages={messages} isLoading={isLoading} />

@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/Authcontext";
+import ThemeToggle from "@/components/ThemeToggle";
 import { ShieldCheck, GraduationCap, Swords, Lock, User as UserIcon } from "lucide-react";
 
 const Navbar = () => {
@@ -91,13 +92,16 @@ const Navbar = () => {
 
                     {/* Auth User Action Buttons & Security Links */}
                     <div className="hidden md:flex items-center gap-2.5">
+                        {/* Theme Toggle Button */}
+                        <ThemeToggle />
+
                         {isLoggedIn ? (
                             <div className="flex items-center gap-2">
                                 <Link
                                     href="/settings/security"
                                     title="Security Settings & Active Sessions"
                                     className={`p-2 rounded-xl border border-border/50 text-xs font-semibold hover:bg-muted transition-colors ${
-                                        pathName === "/settings/security" ? "bg-blue-50 text-blue-600 border-blue-300" : "text-muted-foreground"
+                                        pathName === "/settings/security" ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-blue-950/60 dark:border-blue-700" : "text-muted-foreground"
                                     }`}
                                 >
                                     <Lock className="w-4 h-4" />
@@ -146,8 +150,9 @@ const Navbar = () => {
                         )}
                     </div>
 
-                    {/* Mobile Hamburger Button */}
+                    {/* Mobile Header Action */}
                     <div className="lg:hidden flex items-center gap-2">
+                        <ThemeToggle />
                         <Button
                             variant="ghost"
                             size="sm"

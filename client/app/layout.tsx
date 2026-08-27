@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import { AuthProvider } from "@/context/Authcontext";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -90,19 +91,36 @@ export default function RootLayout({
     },
   };
 
+  const themeScript = `
+    (function() {
+      try {
+        var savedTheme = localStorage.getItem('theme') || 'system';
+        var isDark = savedTheme === 'dark' || (savedTheme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      } catch (e) {}
+    })();
+  `;
+
   return (
-    <html lang="en" className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${plusJakarta.variable} font-sans antialiased`}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-blue-500 selection:text-white">
-        <AuthProvider>
-          <Navbar />
-          <main>{children}</main>
-        </AuthProvider>
+      <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-blue-500 selection:text-white transition-colors duration-200">
+        <ThemeProvider>
+          <AuthProvider>
+            <Navbar />
+            <main>{children}</main>
+          </AuthProvider>
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

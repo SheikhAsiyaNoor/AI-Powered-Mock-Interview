@@ -130,5 +130,30 @@
   }
   html {
     @apply font-sans;
+    color-scheme: light dark;
   }
+}
+
+/* Custom polished scrollbar for dark & light mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  opacity: 0.3;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: oklch(1 0 0 / 20%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ring);
 }

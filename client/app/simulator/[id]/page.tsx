@@ -20,7 +20,9 @@ import {
     Sparkles,
     ShieldCheck,
     Layers,
-    ArrowLeft
+    ArrowLeft,
+    Volume2,
+    VolumeX
 } from "lucide-react";
 import { useTabSwitchProctor } from "@/hooks/useTabSwitchProctor";
 import { ProctorWarningModal } from "@/components/ProctorWarningModal";
@@ -430,39 +432,66 @@ export default function CompanySimulationRoom() {
                 <div className="space-y-6">
                     {/* Chat Messages Stream */}
                     <div className="space-y-4 max-h-[55vh] overflow-y-auto pr-2">
-                        {messages.map((msg, idx) => (
-                            <div
-                                key={idx}
-                                className={`flex items-start gap-3 ${
-                                    msg.role === "user" ? "flex-row-reverse" : "flex-row"
-                                }`}
-                            >
-                                <div
-                                    className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
-                                        msg.role === "user"
-                                            ? "bg-blue-600 text-white"
-                                            : "bg-muted border border-border/60 text-foreground"
-                                    }`}
-                                >
-                                    {msg.role === "user" ? "You" : company?.[0] || "AI"}
-                                </div>
+                        {messages.map((msg, idx) => {
+                            const isRecruiter = msg.role !== "user";
 
+                            return (
                                 <div
-                                    className={`p-4 rounded-2xl max-w-xl text-xs leading-relaxed ${
-                                        msg.role === "user"
-                                            ? "bg-blue-600 text-white rounded-tr-none shadow-xs"
-                                            : "bg-card border border-border/60 text-foreground rounded-tl-none shadow-xs"
+                                    key={idx}
+                                    className={`flex items-start gap-3 ${
+                                        msg.role === "user" ? "flex-row-reverse" : "flex-row"
                                     }`}
                                 >
-                                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                                    {msg.difficulty && (
-                                        <span className="text-[9px] opacity-70 mt-1 block font-mono">
-                                            Difficulty Tier: {msg.difficulty}
-                                        </span>
-                                    )}
+                                    <div
+                                        className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-xs shrink-0 shadow-xs ${
+                                            msg.role === "user"
+                                                ? "bg-blue-600 text-white"
+                                                : "bg-muted border border-border/60 text-foreground"
+                                        }`}
+                                    >
+                                        {msg.role === "user" ? "You" : company?.[0] || "AI"}
+                                    </div>
+
+                                    <div
+                                        className={`p-4 rounded-2xl max-w-xl text-xs leading-relaxed ${
+                                            msg.role === "user"
+                                                ? "bg-blue-600 text-white rounded-tr-none shadow-xs"
+                                                : "bg-card border border-border/60 text-foreground rounded-tl-none shadow-xs"
+                                        }`}
+                                    >
+                                        <div className="flex items-center justify-between gap-3 mb-1">
+                                            <span className="font-semibold text-[11px] opacity-70">
+                                                {msg.role === "user" ? "Your Response" : `${company} Recruiter`}
+                                            </span>
+                                            {isRecruiter && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+                                                        window.speechSynthesis.cancel();
+                                                        const utterance = new SpeechSynthesisUtterance(msg.content);
+                                                        utterance.rate = 1.0;
+                                                        window.speechSynthesis.speak(utterance);
+                                                    }}
+                                                    className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted text-[10px] flex items-center gap-1 cursor-pointer"
+                                                    title="Listen to interviewer"
+                                                >
+                                                    <Volume2 className="w-3.5 h-3.5 text-blue-600" />
+                                                    <span>Listen</span>
+                                                </button>
+                                            )}
+                                        </div>
+
+                                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                                        {msg.difficulty && (
+                                            <span className="text-[9px] opacity-70 mt-1.5 block font-mono font-bold">
+                                                Difficulty Tier: {msg.difficulty}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                         <div ref={messagesEndRef} />
                     </div>
 
