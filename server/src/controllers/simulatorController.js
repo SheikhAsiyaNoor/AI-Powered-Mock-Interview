@@ -139,10 +139,18 @@ const submitCompanyAnswer = async (req, res) => {
                 COMPANY EVALUATION CRITERIA:
                 ${company.systemPromptGuideline}
 
+                EVALUATION RULES:
+                - If the answer is gibberish, random keyboard mash (e.g. "asdfghjk"), off-topic, empty, or completely nonsensical:
+                  Rate evaluation as "Weak", score: 0 to 10, and feedback explicitly noting that the response is invalid or unintelligible.
+                - If the answer is partially correct or basic:
+                  Rate evaluation as "Good", score: 40 to 65.
+                - If the answer is thorough, correct, well-structured:
+                  Rate evaluation as "Strong", score: 75 to 100.
+
                 Provide constructive feedback strictly in JSON format:
                 {
                   "evaluation": "Strong" | "Good" | "Weak",
-                  "score": number (10 to 100),
+                  "score": number (0 to 100),
                   "feedback": "2-3 sentences of direct feedback assessing how well this meets ${company.name}'s standards."
                 }
                 `.trim();
@@ -151,13 +159,13 @@ const submitCompanyAnswer = async (req, res) => {
                     model: GROQ_MODEL,
                     messages: [{ role: "user", content: evalPrompt }],
                     response_format: { type: "json_object" },
-                    temperature: 0.3
+                    temperature: 0.2
                 });
 
                 const parsed = JSON.parse(response.choices[0]?.message?.content || "{}");
-                evaluation = parsed.evaluation || "Good";
-                evalScore = Math.max(10, Math.min(100, parsed.score || 65));
-                feedback = parsed.feedback || `Good attempt. Demonstrates understanding of ${interview.domain} principles for ${company.name}.`;
+                evaluation = parsed.evaluation || "Weak";
+                evalScore = Math.max(0, Math.min(100, typeof parsed.score === "number" ? parsed.score : evaluation === "Weak" ? 10 : 65));
+                feedback = parsed.feedback || `Response evaluated against ${company.name}'s engineering standards.`;
             } catch (groqErr) {
                 console.error("Groq API error on company feedback:", groqErr.message || groqErr);
             }
@@ -212,10 +220,10 @@ const submitCompanyAnswer = async (req, res) => {
             }
 
             // Dimension scores
-            const technicalDepth = Math.min(100, Math.max(20, Math.round(overallScore * (evaluation === "Strong" ? 1.05 : 0.95))));
-            const systemArchitecture = Math.min(100, Math.max(20, Math.round(overallScore * 0.98)));
-            const culturalAlignment = Math.min(100, Math.max(20, Math.round(overallScore * 1.02)));
-            const communication = Math.min(100, Math.max(20, Math.round(overallScore * 0.96)));
+            const technicalDepth = Math.min(100, Math.max(0, Math.round(overallScore * (evaluation === "Strong" ? 1.05 : 0.95))));
+            const systemArchitecture = Math.min(100, Math.max(0, Math.round(overallScore * 0.98)));
+            const culturalAlignment = Math.min(100, Math.max(0, Math.round(overallScore * 1.02)));
+            const communication = Math.min(100, Math.max(0, Math.round(overallScore * 0.96)));
 
             let cultureAlignmentFeedback = `Candidate's approach ${companyStandardMet ? "aligns well with" : "needs further alignment with"} ${company.name}'s engineering standards.`;
             let companySpecificFeedback = `Performance trajectory: ${historySummary}. Focus on ${company.focusAreas?.[0] || 'core problem solving'}.`;

@@ -5,6 +5,26 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import {
+    Sparkles,
+    Send,
+    Copy,
+    Check,
+    FileText,
+    Briefcase,
+    MessageSquare,
+    AlertCircle,
+    CheckCircle2,
+    ChevronRight,
+    HelpCircle,
+    Upload,
+    ArrowRight,
+    TrendingUp,
+    Target,
+    Layers,
+    ListPlus,
+    Wand2
+} from "lucide-react";
 
 interface Interview {
     id: string;
@@ -19,10 +39,22 @@ interface Interview {
 
 interface ResumeAnalysis {
     summary: string;
-    strengths: string[];
-    recommendedDomains: { label: string; reason: string; confidence: number }[];
+    targetRole?: string;
     experienceLevel: "Junior" | "Mid" | "Senior";
+    atsScore?: number;
+    atsBreakdown?: {
+        keywordMatch: number;
+        skillsRelevance: number;
+        experienceAlignment: number;
+        formattingAndStructure: number;
+    };
     skillsDetected: string[];
+    matchingKeywords?: string[];
+    missingKeywords?: string[];
+    strengths: string[];
+    whatNeedsToBeAdded?: string[];
+    recommendedBulletPoints?: string[];
+    recommendedDomains: { label: string; reason: string; confidence: number }[];
 }
 
 const INTERVIEW_DOMAINS = [
@@ -34,6 +66,17 @@ const INTERVIEW_DOMAINS = [
     { label: "System Design", icon: "🏗️", desc: "Scalability, architecture" },
     { label: "Database Design", icon: "💾", desc: "SQL, NoSQL, indexing" },
     { label: "General", icon: "🎯", desc: "Behavioural & fundamentals" },
+];
+
+const ROLE_PRESETS = [
+    "Full Stack Developer",
+    "Frontend React Engineer",
+    "Backend Node.js Engineer",
+    "Python / AI Engineer",
+    "DevOps Cloud Engineer",
+    "Data Scientist / ML",
+    "Java Spring Developer",
+    "Mobile iOS/Android Developer"
 ];
 
 const MiniSparkline = ({ scores }: { scores: number[] }) => {
@@ -82,19 +125,49 @@ const ScoreBadge = ({ score }: { score: number }) => {
 
 function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }) {
     const fileRef = useRef<HTMLInputElement>(null);
+    const jdFileRef = useRef<HTMLInputElement>(null);
+    const chatEndRef = useRef<HTMLDivElement>(null);
+
     const [file, setFile] = useState<File | null>(null);
+    const [targetRole, setTargetRole] = useState("Full Stack Developer");
+    const [jdMode, setJdMode] = useState<"text" | "file">("text");
+    const [jobDescriptionText, setJobDescriptionText] = useState("");
+    const [jdFile, setJdFile] = useState<File | null>(null);
     const [dragging, setDragging] = useState(false);
+
     const [analysis, setAnalysis] = useState<ResumeAnalysis | null>(null);
+    const [extractedSnippets, setExtractedSnippets] = useState<{
+        resumeSnippet?: string;
+        jobDescriptionSnippet?: string;
+    }>({});
     const [error, setError] = useState<string | null>(null);
     const [step, setStep] = useState<"upload" | "analyzing" | "results">("upload");
     const [analyzingStep, setAnalyzingStep] = useState(0);
 
+    // Follow-Up Chat State
+    const [chatMessages, setChatMessages] = useState<{ role: "user" | "assistant"; content: string }[]>([
+        {
+            role: "assistant",
+            content: "👋 Hi! I'm your AI Resume & ATS Coach. Ask me any follow-up questions like: *'How should I reword my project?'*, *'Why this ATS score?'*, or *'Draft a bullet point for my experience.'*"
+        }
+    ]);
+    const [inputQuestion, setInputQuestion] = useState("");
+    const [isChatLoading, setIsChatLoading] = useState(false);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
     const analyzingSteps = [
-        "Reading your resume...",
-        "Detecting skills & technologies...",
-        "Mapping to interview domains...",
-        "Generating recommendations...",
+        "Extracting and parsing text streams...",
+        "Evaluating ATS keyword compatibility...",
+        "Analyzing target role & job requirements...",
+        "Detecting missing skills & generating STAR bullet points...",
+        "Synthesizing customized domain recommendations...",
     ];
+
+    useEffect(() => {
+        if (step === "results" && chatEndRef.current) {
+            chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [chatMessages, step]);
 
     const handleFile = (f: File) => {
         const allowed = [
@@ -103,37 +176,72 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
             "application/msword",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         ];
-        if (!allowed.includes(f.type)) {
+        const isPdfExt = (f.name || "").toLowerCase().endsWith(".pdf");
+        if (!allowed.includes(f.type) && !isPdfExt) {
             setError("Please upload a PDF, DOC, DOCX, or TXT file.");
             return;
         }
-        if (f.size > 5 * 1024 * 1024) {
-            setError("File must be under 5MB.");
+        if (f.size > 15 * 1024 * 1024) {
+            setError("Resume file must be under 15MB.");
             return;
         }
         setFile(f);
         setError(null);
-        setAnalysis(null);
-        setStep("upload");
+    };
+
+    const handleJdFile = (f: File) => {
+        if (f.size > 10 * 1024 * 1024) {
+            setError("Job description file must be under 10MB.");
+            return;
+        }
+        setJdFile(f);
+        setError(null);
     };
 
     const handleAnalyze = async () => {
-        if (!file) return;
+        if (!file) {
+            setError("Please upload your resume file first.");
+            return;
+        }
         setStep("analyzing");
         setError(null);
         let idx = 0;
         const interval = setInterval(() => {
             idx = (idx + 1) % analyzingSteps.length;
             setAnalyzingStep(idx);
-        }, 1100);
+        }, 1200);
 
         try {
             const formData = new FormData();
             formData.append("resume", file);
+            formData.append("targetRole", targetRole || "Software Engineer");
+            if (jobDescriptionText.trim()) {
+                formData.append("jobDescriptionText", jobDescriptionText.trim());
+            }
+            if (jdFile) {
+                formData.append("jobDescriptionFile", jdFile);
+            }
+
             const { data } = await axiosInstance.post("/api/resume/analyze", formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            setAnalysis(data.analysis || data);
+
+            const parsedAnalysis = data.analysis || data;
+            setAnalysis(parsedAnalysis);
+            setExtractedSnippets({
+                resumeSnippet: data.resumeSnippet,
+                jobDescriptionSnippet: data.jobDescriptionSnippet
+            });
+
+            // Seed introductory chat message tailored to role & score
+            const scoreNum = parsedAnalysis.atsScore ?? 75;
+            setChatMessages([
+                {
+                    role: "assistant",
+                    content: `🎉 Resume evaluation complete for **${parsedAnalysis.targetRole || targetRole}**! Your overall ATS Match Score is **${scoreNum}%**.\n\nYou have strong foundational skills, but there are **${parsedAnalysis.missingKeywords?.length || 0} missing keywords** you could add. What questions do you have about optimizing your resume?`
+                }
+            ]);
+
             setStep("results");
         } catch (err: any) {
             console.error("Resume analysis error:", err);
@@ -144,36 +252,205 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
         }
     };
 
+    const handleSendChat = async (presetQuestion?: string) => {
+        const textToSend = presetQuestion || inputQuestion;
+        if (!textToSend.trim() || isChatLoading) return;
+
+        const userMsg = textToSend.trim();
+        setInputQuestion("");
+        setChatMessages((prev) => [...prev, { role: "user", content: userMsg }]);
+        setIsChatLoading(true);
+
+        try {
+            const { data } = await axiosInstance.post("/api/resume/chat", {
+                message: userMsg,
+                conversationHistory: chatMessages,
+                resumeContext: {
+                    targetRole: analysis?.targetRole || targetRole,
+                    atsScore: analysis?.atsScore,
+                    missingKeywords: analysis?.missingKeywords,
+                    skillsDetected: analysis?.skillsDetected,
+                    summary: analysis?.summary,
+                    jobDescriptionSnippet: extractedSnippets.jobDescriptionSnippet
+                }
+            });
+
+            setChatMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: data.reply || "Here are additional actionable tips to strengthen your resume." }
+            ]);
+        } catch (err: any) {
+            console.error("Chat error:", err);
+            setChatMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: "Sorry, I couldn't process your question right now. Please try asking again." }
+            ]);
+        } finally {
+            setIsChatLoading(false);
+        }
+    };
+
+    const copyBulletPoint = (text: string, index: number) => {
+        navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
+    };
+
     const reset = () => {
         setFile(null);
+        setJdFile(null);
+        setJobDescriptionText("");
         setAnalysis(null);
         setError(null);
         setStep("upload");
     };
 
+    const atsScore = analysis?.atsScore ?? 75;
+    const atsScoreColor =
+        atsScore >= 80
+            ? "text-emerald-500 border-emerald-500"
+            : atsScore >= 65
+            ? "text-blue-500 border-blue-500"
+            : atsScore >= 45
+            ? "text-amber-500 border-amber-500"
+            : "text-rose-500 border-rose-500";
+
+    const atsScoreBadge =
+        atsScore >= 80
+            ? { text: "High ATS Match 🚀", bg: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" }
+            : atsScore >= 65
+            ? { text: "Moderate ATS Match ⚡", bg: "bg-blue-500/10 text-blue-600 border-blue-500/20" }
+            : { text: "Needs Improvement ⚠️", bg: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
+
     return (
         <div className="mt-6 space-y-6">
             <Card className="p-6 border border-border/50 rounded-3xl shadow-2xs">
-                <div className="flex items-center justify-between mb-6">
+                {/* Panel Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-xl font-bold">
+                        <div className="w-11 h-11 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl font-bold shadow-xs">
                             📄
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-foreground">AI Resume Analysis</h3>
-                            <p className="text-xs text-muted-foreground">Upload your resume · Get domain recommendations</p>
+                            <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                                AI Resume & ATS Evaluation
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-extrabold uppercase tracking-wider">
+                                    Smart Match
+                                </span>
+                            </h3>
+                            <p className="text-xs text-muted-foreground">
+                                Role-targeted evaluation · ATS scoring · Missing keywords · Interactive AI Coach
+                            </p>
                         </div>
                     </div>
 
                     {step === "results" && (
                         <Button variant="outline" size="sm" onClick={reset} className="rounded-xl text-xs cursor-pointer">
-                            Upload new ↗
+                            Analyze Another Resume ↗
                         </Button>
                     )}
                 </div>
 
+                {/* Upload & Config Step */}
                 {step === "upload" && (
                     <div className="space-y-6">
+                        {/* Target Role & Preset Chips */}
+                        <div className="space-y-2.5">
+                            <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                <Briefcase className="w-3.5 h-3.5 text-blue-600" />
+                                Target Role You Are Applying For:
+                            </label>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    value={targetRole}
+                                    onChange={(e) => setTargetRole(e.target.value)}
+                                    placeholder="e.g. Full Stack Developer, Senior Backend Engineer, Data Scientist"
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-xs bg-muted/40 border border-border/60 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                                />
+                            </div>
+
+                            {/* Preset Role Badges */}
+                            <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                                <span className="text-[11px] text-muted-foreground font-medium">Quick presets:</span>
+                                {ROLE_PRESETS.map((preset, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => setTargetRole(preset)}
+                                        className={`text-[11px] px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                                            targetRole === preset
+                                                ? "bg-blue-600 text-white border-blue-600 font-bold"
+                                                : "bg-muted/40 border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                        }`}
+                                    >
+                                        {preset}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Optional Job Description Input */}
+                        <div className="p-4 rounded-2xl bg-muted/30 border border-border/50 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                    <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                                    Job Description / Requirements <span className="text-[11px] font-normal text-muted-foreground">(Optional for exact ATS matching)</span>
+                                </label>
+
+                                <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[11px]">
+                                    <button
+                                        type="button"
+                                        onClick={() => setJdMode("text")}
+                                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-medium ${
+                                            jdMode === "text" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground"
+                                        }`}
+                                    >
+                                        Paste Text
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setJdMode("file")}
+                                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer font-medium ${
+                                            jdMode === "file" ? "bg-card text-foreground shadow-2xs font-bold" : "text-muted-foreground"
+                                        }`}
+                                    >
+                                        Upload PDF/Doc
+                                    </button>
+                                </div>
+                            </div>
+
+                            {jdMode === "text" ? (
+                                <textarea
+                                    rows={3}
+                                    value={jobDescriptionText}
+                                    onChange={(e) => setJobDescriptionText(e.target.value)}
+                                    placeholder="Paste the job posting description, required qualifications, or key skills here to evaluate exact keyword fit..."
+                                    className="w-full p-3 rounded-xl text-xs bg-card border border-border/60 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                                />
+                            ) : (
+                                <div
+                                    onClick={() => jdFileRef.current?.click()}
+                                    className="p-4 border border-dashed rounded-xl text-center cursor-pointer hover:bg-muted/40 transition-all border-border/60"
+                                >
+                                    <input
+                                        ref={jdFileRef}
+                                        type="file"
+                                        accept=".pdf,.doc,.docx,.txt"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            if (e.target.files?.[0]) handleJdFile(e.target.files[0]);
+                                        }}
+                                    />
+                                    <p className="text-xs font-semibold text-foreground">
+                                        {jdFile ? `📎 ${jdFile.name}` : "Click to attach Job Description PDF / DOCX"}
+                                    </p>
+                                    <p className="text-[11px] text-muted-foreground mt-0.5">Max 10 MB</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Resume File Dropzone */}
                         <div
                             onDragOver={(e) => {
                                 e.preventDefault();
@@ -186,9 +463,11 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                 if (e.dataTransfer.files?.[0]) handleFile(e.dataTransfer.files[0]);
                             }}
                             onClick={() => fileRef.current?.click()}
-                            className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all ${
+                            className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
                                 dragging
                                     ? "border-blue-600 bg-blue-50/10"
+                                    : file
+                                    ? "border-emerald-500/60 bg-emerald-500/5"
                                     : "border-border/60 hover:border-blue-600/50 hover:bg-muted/30"
                             }`}
                         >
@@ -201,17 +480,23 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                     if (e.target.files?.[0]) handleFile(e.target.files[0]);
                                 }}
                             />
-                            <div className="text-4xl mb-3">☁️</div>
+                            <div className="text-4xl mb-2">{file ? "✅" : "☁️"}</div>
                             <h3 className="text-base font-bold text-foreground mb-1">
-                                {file ? file.name : "Drop your resume here"}
+                                {file ? file.name : "Drop your resume file here"}
                             </h3>
                             <p className="text-xs text-muted-foreground">
-                                or click to browse · PDF, DOC, DOCX, TXT · Max 5 MB
+                                {file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB · Click to change file` : "or click to browse · Supports PDF, Word (.doc, .docx), TXT · Max 15 MB"}
                             </p>
                         </div>
 
-                        {error && <p className="text-xs text-rose-500 font-semibold text-center">{error}</p>}
+                        {error && (
+                            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-600 font-semibold text-center flex items-center justify-center gap-2">
+                                <AlertCircle className="w-4 h-4" />
+                                {error}
+                            </div>
+                        )}
 
+                        {/* Action Buttons */}
                         {file && (
                             <div className="flex items-center justify-center gap-4">
                                 <Button variant="outline" onClick={reset} className="rounded-full px-6 cursor-pointer">
@@ -219,9 +504,10 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                 </Button>
                                 <Button
                                     onClick={handleAnalyze}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full px-8 font-semibold cursor-pointer shadow-xs"
+                                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-full px-8 py-2.5 font-bold cursor-pointer shadow-md shadow-blue-500/20 flex items-center gap-2"
                                 >
-                                    Analyze Resume ⚡
+                                    <Sparkles className="w-4 h-4" />
+                                    Evaluate Resume & ATS Fit
                                 </Button>
                             </div>
                         )}
@@ -229,12 +515,12 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                         {/* 4 Feature Cards */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2">
                             {[
-                                { icon: "🔍", title: "Skills Detection", desc: "Frameworks, languages, tools" },
-                                { icon: "📊", title: "Experience Level", desc: "Junior / Mid / Senior" },
-                                { icon: "🎯", title: "Domain Matching", desc: "Best-fit interview areas" },
-                                { icon: "💡", title: "Strength Analysis", desc: "Your competitive edge" },
+                                { icon: "🎯", title: "Targeted ATS Score", desc: "Keyword matching against job requirements" },
+                                { icon: "⚠️", title: "Missing Keywords", desc: "Identifies crucial omitted skills" },
+                                { icon: "✍️", title: "STAR Bullet Points", desc: "Actionable phrasing & additions" },
+                                { icon: "💬", title: "Interactive Coach", desc: "Real-time follow-up Q&A chat" },
                             ].map((f, i) => (
-                                <div key={i} className="p-3.5 rounded-2xl bg-muted/40 border border-border/40">
+                                <div key={i} className="p-3.5 rounded-2xl bg-muted/30 border border-border/40">
                                     <span className="text-lg mb-1 block">{f.icon}</span>
                                     <p className="text-xs font-bold text-foreground">{f.title}</p>
                                     <p className="text-[11px] text-muted-foreground mt-0.5">{f.desc}</p>
@@ -244,23 +530,107 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                     </div>
                 )}
 
+                {/* Analyzing Loader Step */}
                 {step === "analyzing" && (
-                    <div className="py-12 text-center max-w-md mx-auto space-y-4">
-                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                        <h3 className="text-lg font-bold text-foreground">Analyzing Your Resume</h3>
-                        <p className="text-sm text-blue-600 font-semibold transition-all">
+                    <div className="py-16 text-center max-w-md mx-auto space-y-5">
+                        <div className="relative w-16 h-16 mx-auto">
+                            <div className="w-16 h-16 border-4 border-blue-600/30 rounded-full" />
+                            <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                            <div className="absolute inset-0 flex items-center justify-center text-xl">📄</div>
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-foreground">Evaluating Your Resume</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Targeting {targetRole}</p>
+                        </div>
+                        <p className="text-xs text-blue-600 font-semibold bg-blue-500/10 py-1.5 px-4 rounded-full inline-block animate-pulse">
                             {analyzingSteps[analyzingStep]}
                         </p>
                     </div>
                 )}
 
+                {/* Results Step */}
                 {step === "results" && analysis && (
                     <div className="space-y-6 pt-2">
-                        {/* Summary Card */}
-                        <Card className="p-5 border border-border/50 rounded-2xl bg-muted/20">
-                            <div className="flex items-center justify-between mb-3">
+                        {/* ATS Score & Dimension Breakdown Card */}
+                        <Card className="p-6 border border-border/60 rounded-3xl bg-card shadow-xs">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+                                {/* ATS Score Circle / Gauge */}
+                                <div className="md:col-span-4 flex flex-col items-center justify-center text-center p-4 rounded-2xl bg-muted/20 border border-border/40">
+                                    <div className="relative w-28 h-28 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                            <path
+                                                className="text-muted/60"
+                                                strokeWidth="3.5"
+                                                stroke="currentColor"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                            <path
+                                                className={atsScore >= 80 ? "text-emerald-500" : atsScore >= 65 ? "text-blue-600" : "text-amber-500"}
+                                                strokeDasharray={`${atsScore}, 100`}
+                                                strokeWidth="3.5"
+                                                strokeLinecap="round"
+                                                stroke="currentColor"
+                                                fill="none"
+                                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                            />
+                                        </svg>
+                                        <div className="absolute flex flex-col items-center justify-center">
+                                            <span className="text-2xl font-black text-foreground">{atsScore}%</span>
+                                            <span className="text-[9px] uppercase font-extrabold text-muted-foreground tracking-wider">ATS Score</span>
+                                        </div>
+                                    </div>
+
+                                    <span className={`text-[11px] px-3 py-1 rounded-full border font-bold mt-3 ${atsScoreBadge.bg}`}>
+                                        {atsScoreBadge.text}
+                                    </span>
+                                    <p className="text-[11px] text-muted-foreground mt-1.5">Target: <strong className="text-foreground">{analysis.targetRole || targetRole}</strong></p>
+                                </div>
+
+                                {/* 4 Dimension Bars */}
+                                <div className="md:col-span-8 space-y-3.5">
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                                        <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
+                                        ATS Criteria Breakdown
+                                    </h4>
+
+                                    {[
+                                        { label: "Target Keyword Match", pct: analysis.atsBreakdown?.keywordMatch ?? Math.round(atsScore * 0.95) },
+                                        { label: "Technical Skills Relevance", pct: analysis.atsBreakdown?.skillsRelevance ?? Math.round(atsScore * 1.02) },
+                                        { label: "Experience & Role Alignment", pct: analysis.atsBreakdown?.experienceAlignment ?? Math.round(atsScore * 0.98) },
+                                        { label: "ATS Formatting & Structure", pct: analysis.atsBreakdown?.formattingAndStructure ?? 85 },
+                                    ].map((bar, i) => {
+                                        const cleanPct = Math.min(100, Math.max(0, bar.pct));
+                                        const barColor =
+                                            cleanPct >= 75
+                                                ? "bg-emerald-500 text-emerald-600 dark:text-emerald-400"
+                                                : cleanPct >= 50
+                                                ? "bg-blue-600 text-blue-600 dark:text-blue-400"
+                                                : "bg-amber-500 text-amber-600 dark:text-amber-400";
+                                        return (
+                                            <div key={i} className="space-y-1">
+                                                <div className="flex justify-between text-xs font-semibold">
+                                                    <span className="text-foreground">{bar.label}</span>
+                                                    <span className={`font-bold ${barColor.split(" ")[1]}`}>{cleanPct}%</span>
+                                                </div>
+                                                <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full ${barColor.split(" ")[0]} rounded-full transition-all duration-700`}
+                                                        style={{ width: `${cleanPct}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </Card>
+
+                        {/* Summary & Candidate Overview */}
+                        <Card className="p-5 border border-border/50 rounded-2xl bg-muted/20 space-y-4">
+                            <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                    <span>🧠</span> AI Summary
+                                    <span>🧠</span> Professional AI Summary
                                 </h4>
                                 <span className="text-xs px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 font-semibold border border-blue-500/20">
                                     {analysis.experienceLevel} Level
@@ -268,10 +638,11 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                             </div>
                             <p className="text-xs text-muted-foreground leading-relaxed">{analysis.summary}</p>
 
+                            {/* Skills Detected */}
                             {analysis.skillsDetected?.length > 0 && (
-                                <div className="mt-4 pt-4 border-t border-border/60">
+                                <div className="pt-3 border-t border-border/60">
                                     <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                                        🛠 Skills Detected
+                                        🛠 Detected Technical Skills ({analysis.skillsDetected.length})
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
                                         {analysis.skillsDetected.map((skill, idx) => (
@@ -282,69 +653,92 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                     </div>
                                 </div>
                             )}
+
+                            {/* Missing Keywords To Add */}
+                            {analysis.missingKeywords && analysis.missingKeywords.length > 0 && (
+                                <div className="pt-3 border-t border-border/60">
+                                    <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                        <AlertCircle className="w-3.5 h-3.5" />
+                                        Missing Critical Keywords for {analysis.targetRole || targetRole}
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {analysis.missingKeywords.map((kw, idx) => (
+                                            <span key={idx} className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 font-semibold border border-rose-500/20 flex items-center gap-1">
+                                                + {kw}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </Card>
 
-                        {/* Recommended Domains */}
-                        <div>
-                            <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
-                                <span>🎯</span> Recommended Interview Domains
-                            </h4>
-                            <div className="space-y-3">
-                                {analysis.recommendedDomains?.map((rec, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => onDomainSelect(rec.label)}
-                                        className="p-4 rounded-2xl border border-border/60 hover:border-blue-600/50 hover:bg-muted/40 transition-all cursor-pointer flex items-center justify-between gap-4"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-600 flex items-center justify-center text-xl font-bold flex-shrink-0">
-                                                🟨
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <p className="text-sm font-bold text-foreground">{rec.label}</p>
-                                                    {i === 0 && (
-                                                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold uppercase tracking-wider">
-                                                            TOP PICK
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{rec.reason}</p>
-                                            </div>
+                        {/* What Needs To Be Added (Action Checklist) */}
+                        {analysis.whatNeedsToBeAdded && analysis.whatNeedsToBeAdded.length > 0 && (
+                            <Card className="p-5 border border-amber-500/30 bg-amber-500/5 rounded-2xl space-y-3">
+                                <h4 className="text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                                    <ListPlus className="w-4 h-4 text-amber-600" />
+                                    What Needs To Be Added to Pass ATS Filters
+                                </h4>
+                                <div className="space-y-2">
+                                    {analysis.whatNeedsToBeAdded.map((item, idx) => (
+                                        <div key={idx} className="flex items-start gap-2.5 text-xs text-muted-foreground">
+                                            <span className="w-5 h-5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 font-bold flex items-center justify-center flex-shrink-0 text-[10px] mt-0.5">
+                                                {idx + 1}
+                                            </span>
+                                            <p className="leading-relaxed">{item}</p>
                                         </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
 
-                                        <div className="flex items-center gap-3 flex-shrink-0">
-                                            {(() => {
-                                                const confVal = typeof rec.confidence === "number"
-                                                    ? (rec.confidence <= 1 ? Math.round(rec.confidence * 100) : Math.min(100, Math.max(10, Math.round(rec.confidence))))
-                                                    : 85;
-                                                return (
-                                                    <>
-                                                        <div className="w-20 hidden sm:block">
-                                                            <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                                                <div
-                                                                    className="h-full bg-blue-600 rounded-full"
-                                                                    style={{ width: `${confVal}%` }}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-xs font-bold text-blue-600">
-                                                            {confVal}%
-                                                        </span>
-                                                    </>
-                                                );
-                                            })()}
+                        {/* Recommended STAR Bullet Points */}
+                        {analysis.recommendedBulletPoints && analysis.recommendedBulletPoints.length > 0 && (
+                            <Card className="p-5 border border-indigo-500/30 bg-indigo-500/5 rounded-2xl space-y-3">
+                                <h4 className="text-sm font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
+                                    <Wand2 className="w-4 h-4 text-indigo-600" />
+                                    Recommended High-Impact Bullet Points (Ready to Copy)
+                                </h4>
+                                <p className="text-[11px] text-muted-foreground">
+                                    Tailored specifically for {analysis.targetRole || targetRole} using the STAR method:
+                                </p>
+                                <div className="space-y-2.5">
+                                    {analysis.recommendedBulletPoints.map((bp, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="p-3.5 rounded-xl bg-card border border-border/60 flex items-start justify-between gap-3 group"
+                                        >
+                                            <p className="text-xs text-foreground leading-relaxed select-all">
+                                                • {bp}
+                                            </p>
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                onClick={() => copyBulletPoint(bp, idx)}
+                                                className="rounded-lg text-[11px] h-7 px-2.5 flex-shrink-0 cursor-pointer border-border/60 hover:bg-indigo-50 dark:hover:bg-indigo-950"
+                                            >
+                                                {copiedIndex === idx ? (
+                                                    <span className="flex items-center gap-1 text-emerald-600 font-bold">
+                                                        <Check className="w-3 h-3" /> Copied!
+                                                    </span>
+                                                ) : (
+                                                    <span className="flex items-center gap-1 text-muted-foreground">
+                                                        <Copy className="w-3 h-3" /> Copy
+                                                    </span>
+                                                )}
+                                            </Button>
                                         </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                                    ))}
+                                </div>
+                            </Card>
+                        )}
 
                         {/* Strengths Card */}
                         {analysis.strengths?.length > 0 && (
                             <Card className="p-5 border border-emerald-500/20 bg-emerald-500/5 rounded-2xl">
                                 <h4 className="text-sm font-bold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2">
-                                    <span>✅</span> Your Strengths
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Your Profile Strengths
                                 </h4>
                                 <ul className="space-y-1.5 pl-5 list-disc text-xs text-muted-foreground">
                                     {analysis.strengths.map((str, i) => (
@@ -353,6 +747,136 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                                 </ul>
                             </Card>
                         )}
+
+                        {/* Recommended Interview Domains */}
+                        <div>
+                            <h4 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
+                                <Target className="w-4 h-4 text-blue-600" />
+                                Recommended Mock Interview Practice
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {analysis.recommendedDomains?.map((rec, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => onDomainSelect(rec.label)}
+                                        className="p-4 rounded-2xl border border-border/60 hover:border-blue-600/50 hover:bg-muted/40 transition-all cursor-pointer flex flex-col justify-between gap-3 group"
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <p className="text-xs font-bold text-foreground group-hover:text-blue-600 transition-colors">
+                                                    {rec.label}
+                                                </p>
+                                                {i === 0 && (
+                                                    <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-600 text-white font-bold uppercase tracking-wider">
+                                                        Top Fit
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[11px] text-muted-foreground line-clamp-2">{rec.reason}</p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                                            <span className="text-[10px] font-bold text-blue-600">{rec.confidence}% match</span>
+                                            <span className="text-[11px] text-blue-600 font-bold flex items-center gap-1">
+                                                Start Interview <ArrowRight className="w-3 h-3" />
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Interactive AI Resume Coach Chat Box */}
+                        <Card className="p-5 border border-blue-500/30 rounded-3xl bg-card shadow-xs space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center text-sm font-bold shadow-xs">
+                                        🤖
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-foreground">Ask AI Resume Coach</h4>
+                                        <p className="text-[11px] text-muted-foreground">Ask follow-up questions to refine wording, metrics, or interview answers</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Chat Messages Stream */}
+                            <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                                {chatMessages.map((msg, i) => (
+                                    <div
+                                        key={i}
+                                        className={`flex gap-2.5 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                                    >
+                                        {msg.role === "assistant" && (
+                                            <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                                                🤖
+                                            </div>
+                                        )}
+                                        <div
+                                            className={`p-3.5 rounded-2xl text-xs leading-relaxed max-w-[85%] ${
+                                                msg.role === "user"
+                                                    ? "bg-blue-600 text-white rounded-br-xs"
+                                                    : "bg-muted/50 border border-border/60 text-foreground rounded-bl-xs whitespace-pre-line"
+                                            }`}
+                                        >
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isChatLoading && (
+                                    <div className="flex gap-2.5 items-center text-xs text-muted-foreground">
+                                        <div className="w-6 h-6 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center text-xs">
+                                            🤖
+                                        </div>
+                                        <span className="animate-pulse font-medium">Coach is typing advice...</span>
+                                    </div>
+                                )}
+                                <div ref={chatEndRef} />
+                            </div>
+
+                            {/* Starter Quick Prompt Chips */}
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                                {[
+                                    "How should I reword my project description?",
+                                    "Why is my ATS score this and how to reach 90%?",
+                                    "Write a strong STAR bullet point for my experience",
+                                    "How do I explain missing skills in an interview?"
+                                ].map((q, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => handleSendChat(q)}
+                                        className="text-[11px] px-2.5 py-1 rounded-lg bg-muted/40 border border-border/50 text-muted-foreground hover:text-blue-600 hover:border-blue-500/40 transition-all cursor-pointer text-left"
+                                    >
+                                        💡 {q}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Chat Input Box */}
+                            <div className="flex items-center gap-2 pt-2">
+                                <input
+                                    type="text"
+                                    value={inputQuestion}
+                                    onChange={(e) => setInputQuestion(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendChat();
+                                        }
+                                    }}
+                                    placeholder="Ask anything (e.g. 'How should I word my React project to sound more senior?')..."
+                                    className="flex-1 px-4 py-2.5 rounded-xl text-xs bg-muted/40 border border-border/60 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-600/30"
+                                />
+                                <Button
+                                    onClick={() => handleSendChat()}
+                                    disabled={!inputQuestion.trim() || isChatLoading}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-4 py-2.5 text-xs font-bold cursor-pointer disabled:opacity-50"
+                                >
+                                    <Send className="w-3.5 h-3.5" />
+                                </Button>
+                            </div>
+                        </Card>
                     </div>
                 )}
             </Card>

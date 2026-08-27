@@ -110,6 +110,11 @@ function InterviewContent() {
     const [interviewMode, setInterviewMode] = useState<"chat" | "voice">("chat");
     const [latestFeedback, setLatestFeedback] = useState<string>("");
     const [currentQuestionText, setCurrentQuestionText] = useState<string>("");
+    const [dimensionScores, setDimensionScores] = useState<{
+        technicalAccuracy: number;
+        communicationClarity: number;
+        problemSolving: number;
+    } | null>(null);
 
     const voice = useVoiceInterview({ autoSpeak: true, initialRate: 1.0 });
 
@@ -128,7 +133,7 @@ function InterviewContent() {
                     forceQuitReason: "Session terminated due to 4 tab-switch violations."
                 });
                 if (data) {
-                    setInterviewScore(data.score || 0);
+                    setInterviewScore(typeof data.score === 'number' ? data.score : 0);
                     setProgressionReport("Interview Auto-Terminated: You switched tabs 4 times during the live evaluation.");
                 }
             } catch (err) {
@@ -167,6 +172,14 @@ function InterviewContent() {
         return () => clearInterval(t);
     }, [isInterviewComplete]);
 
+    // Ensure all audio and microphone streams are stopped when leaving page
+    useEffect(() => {
+        return () => {
+            voice.stopListening();
+            voice.stopSpeaking();
+        };
+    }, [voice]);
+
     const startInterview = async () => {
         try {
             setIsLoading(true);
@@ -177,6 +190,7 @@ function InterviewContent() {
                 setQuestionsAnswered(0);
                 setCurrentDifficulty(data.difficulty || "Medium");
                 setCurrentQuestionText(initialQ);
+                setDimensionScores(null);
                 setMessages([
                     {
                         id: "1",
@@ -233,19 +247,20 @@ function InterviewContent() {
                 if (data.progressionReport) setProgressionReport(data.progressionReport);
                 if (data.nextDifficulty) setCurrentDifficulty(data.nextDifficulty);
                 if (data.feedback) setLatestFeedback(data.feedback);
+                if (data.dimensionScores) setDimensionScores(data.dimensionScores);
 
                 setMessages((prev) => [
                     ...prev,
                     {
                         id: Date.now().toString(),
-                        content: data.feedback || "Good answer! Your response demonstrates solid understanding",
+                        content: data.feedback || "Answer evaluated based on technical depth and communication clarity.",
                         isUser: false,
                         timestamp: new Date(),
                     },
                 ]);
 
                 if (data.isComplete || newCount >= TOTAL_QUESTIONS) {
-                    setInterviewScore(data.score || 75);
+                    setInterviewScore(typeof data.score === "number" ? data.score : 0);
                     setIsInterviewComplete(true);
                     voice.stopSpeaking();
                     voice.stopListening();
@@ -289,17 +304,22 @@ function InterviewContent() {
         score >= 80
             ? {
                 text: "Excellent! You're interview-ready 🚀",
-                color: "text-green-600 dark:text-green-400",
+                color: "text-emerald-600 dark:text-emerald-400",
             }
             : score >= 60
                 ? {
                     text: "Good effort! A few more sessions will get you there 💪",
                     color: "text-blue-600 dark:text-blue-400",
                 }
-                : {
-                    text: "Keep practicing! Every session makes you stronger 🏋️‍♂️",
-                    color: "text-orange-600 dark:text-orange-400",
-                };
+                : score >= 40
+                    ? {
+                        text: "Needs Improvement. Review the topics and practice again 🏋️‍♂️",
+                        color: "text-amber-600 dark:text-amber-400",
+                    }
+                    : {
+                        text: "Weak Performance. Review fundamental concepts and try again ⚠️",
+                        color: "text-rose-600 dark:text-rose-400",
+                    };
 
     const formatTime = (s: number) =>
         `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -447,23 +467,51 @@ function InterviewContent() {
                             <h3 className="text-base font-bold text-foreground mb-6">Performance Breakdown</h3>
                             <div className="space-y-5">
                                 {[
-                                    { label: "Technical Accuracy", pct: Math.min(score + 5, 100) },
-                                    { label: "Communication Clarity", pct: Math.min(Math.max(score - 10, 15), 100) },
-                                    { label: "Problem-Solving Approach", pct: Math.min(score, 100) },
-                                ].map((bar, i) => (
-                                    <div key={i} className="space-y-2">
-                                        <div className="flex justify-between text-xs font-semibold">
-                                            <span className="text-foreground">{bar.label}</span>
-                                            <span className="text-foreground font-bold">{bar.pct}%</span>
+                                    {
+                                        label: "Technical Accuracy",
+                                        pct: Math.max(0, Math.min(100, dimensionScores?.technicalAccuracy ?? score)),
+                                    },
+                                    {
+                                        label: "Communication Clarity",
+                                        pct: Math.max(0, Math.min(100, dimensionScores?.communicationClarity ?? score)),
+                                    },
+                                    {
+                                        label: "Problem-Solving Approach",
+                                        pct: Math.max(0, Math.min(100, dimensionScores?.problemSolving ?? score)),
+                                    },
+                                ].map((bar, i) => {
+                                    const textColor =
+                                        bar.pct >= 75
+                                            ? "text-emerald-600 dark:text-emerald-400"
+                                            : bar.pct >= 50
+                                            ? "text-blue-600 dark:text-blue-400"
+                                            : bar.pct >= 25
+                                            ? "text-amber-600 dark:text-amber-400"
+                                            : "text-rose-600 dark:text-rose-400";
+                                    const fillBg =
+                                        bar.pct >= 75
+                                            ? "bg-emerald-500"
+                                            : bar.pct >= 50
+                                            ? "bg-blue-600"
+                                            : bar.pct >= 25
+                                            ? "bg-amber-500"
+                                            : "bg-rose-500";
+
+                                    return (
+                                        <div key={i} className="space-y-2">
+                                            <div className="flex justify-between text-xs font-semibold">
+                                                <span className="text-foreground">{bar.label}</span>
+                                                <span className={`font-bold ${textColor}`}>{bar.pct}%</span>
+                                            </div>
+                                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                                <div
+                                                    className={`h-full ${fillBg} rounded-full transition-all duration-700`}
+                                                    style={{ width: `${bar.pct}%` }}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-blue-600 rounded-full transition-all duration-700"
-                                                style={{ width: `${bar.pct}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </Card>
 

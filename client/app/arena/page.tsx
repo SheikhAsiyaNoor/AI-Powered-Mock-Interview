@@ -27,7 +27,9 @@ import {
     Calendar,
     Pin,
     Lock,
-    Filter
+    Filter,
+    ChevronLeft,
+    ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -173,6 +175,8 @@ export default function ArenaPage() {
     const [badges, setBadges] = useState<BadgeItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [pinLoadingId, setPinLoadingId] = useState<string | null>(null);
+    const [leaderboardPage, setLeaderboardPage] = useState(1);
+    const LEADERBOARD_PAGE_SIZE = 20;
 
     const loadArenaData = async () => {
         setIsLoading(true);
@@ -572,61 +576,134 @@ export default function ArenaPage() {
                         </div>
                     )}
 
-                    {/* Leaderboard Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-xs">
-                            <thead className="border-b border-border/40 text-muted-foreground uppercase">
-                                <tr>
-                                    <th className="py-3 px-4">Rank</th>
-                                    <th className="py-3 px-4">Candidate</th>
-                                    <th className="py-3 px-4">Total XP</th>
-                                    <th className="py-3 px-4">Rank Tier</th>
-                                    <th className="py-3 px-4">Streak</th>
-                                    <th className="py-3 px-4">Battles</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border/20">
-                                {leaderboard.map((u) => {
-                                    const tierBadge = RANK_TIER_COLORS[u.tier] || RANK_TIER_COLORS.Novice;
-                                    return (
-                                        <tr
-                                            key={u.userId}
-                                            className={`hover:bg-muted/30 transition-colors ${
-                                                u.isCurrentUser ? "bg-primary/10 font-bold" : ""
-                                            }`}
-                                        >
-                                            <td className="py-3.5 px-4 font-mono font-extrabold">
-                                                {u.rank === 1 ? "🥇 #1" : u.rank === 2 ? "🥈 #2" : u.rank === 3 ? "🥉 #3" : `#${u.rank}`}
-                                            </td>
-                                            <td className="py-3.5 px-4 font-semibold text-foreground flex items-center gap-2">
-                                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
-                                                    {u.name.slice(0, 2).toUpperCase()}
-                                                </div>
-                                                <span>{u.name}</span>
-                                                {u.isCurrentUser && (
-                                                    <span className="text-[10px] px-2 py-0.2 rounded-full bg-primary text-primary-foreground font-bold">
-                                                        You
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-3.5 px-4 font-mono font-bold text-primary">{u.xp} XP</td>
-                                            <td className="py-3.5 px-4">
-                                                <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border ${tierBadge.bg} ${tierBadge.text} ${tierBadge.border}`}>
-                                                    {u.tier}
-                                                </span>
-                                            </td>
-                                            <td className="py-3.5 px-4">
-                                                <span className="inline-flex items-center gap-1 text-orange-400 font-bold text-xs">
-                                                    <Flame className="w-3.5 h-3.5 fill-orange-400" /> {u.streak}D
-                                                </span>
-                                            </td>
-                                            <td className="py-3.5 px-4 text-muted-foreground">{u.challengesCompleted} completed</td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                    {/* Leaderboard Table (Paginated list of 20 below Top 3) */}
+                    {(() => {
+                        const listCandidates = leaderboard.length > 3 ? leaderboard.slice(3) : leaderboard;
+                        const totalPages = Math.max(1, Math.ceil(listCandidates.length / LEADERBOARD_PAGE_SIZE));
+                        const currentPage = Math.min(leaderboardPage, totalPages);
+                        const displayedCandidates = listCandidates.slice(
+                            (currentPage - 1) * LEADERBOARD_PAGE_SIZE,
+                            currentPage * LEADERBOARD_PAGE_SIZE
+                        );
+                        const startRankIndex = listCandidates.length > 0 ? (currentPage - 1) * LEADERBOARD_PAGE_SIZE + 1 : 0;
+                        const endRankIndex = Math.min(currentPage * LEADERBOARD_PAGE_SIZE, listCandidates.length);
+
+                        return (
+                            <div className="space-y-4">
+                                <div className="overflow-x-auto rounded-2xl border border-border/30">
+                                    <table className="w-full text-left text-xs">
+                                        <thead className="border-b border-border/40 text-muted-foreground uppercase bg-muted/30">
+                                            <tr>
+                                                <th className="py-3 px-4">Rank</th>
+                                                <th className="py-3 px-4">Candidate</th>
+                                                <th className="py-3 px-4">Total XP</th>
+                                                <th className="py-3 px-4">Rank Tier</th>
+                                                <th className="py-3 px-4">Streak</th>
+                                                <th className="py-3 px-4">Battles</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-border/20">
+                                            {displayedCandidates.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={6} className="py-8 text-center text-muted-foreground font-medium">
+                                                        No additional candidates ranked yet.
+                                                    </td>
+                                                </tr>
+                                            ) : (
+                                                displayedCandidates.map((u) => {
+                                                    const tierBadge = RANK_TIER_COLORS[u.tier] || RANK_TIER_COLORS.Novice;
+                                                    return (
+                                                        <tr
+                                                            key={u.userId}
+                                                            className={`hover:bg-muted/30 transition-colors ${
+                                                                u.isCurrentUser ? "bg-primary/10 font-bold" : ""
+                                                            }`}
+                                                        >
+                                                            <td className="py-3.5 px-4 font-mono font-extrabold text-muted-foreground">
+                                                                #{u.rank}
+                                                            </td>
+                                                            <td className="py-3.5 px-4 font-semibold text-foreground flex items-center gap-2">
+                                                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
+                                                                    {u.name.slice(0, 2).toUpperCase()}
+                                                                </div>
+                                                                <span>{u.name}</span>
+                                                                {u.isCurrentUser && (
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
+                                                                        You
+                                                                    </span>
+                                                                )}
+                                                            </td>
+                                                            <td className="py-3.5 px-4 font-mono font-bold text-primary">{u.xp} XP</td>
+                                                            <td className="py-3.5 px-4">
+                                                                <span className={`px-2 py-0.5 rounded-md font-bold text-[10px] uppercase border ${tierBadge.bg} ${tierBadge.text} ${tierBadge.border}`}>
+                                                                    {u.tier}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3.5 px-4">
+                                                                <span className="inline-flex items-center gap-1 text-orange-400 font-bold text-xs">
+                                                                    <Flame className="w-3.5 h-3.5 fill-orange-400" /> {u.streak}D
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-3.5 px-4 text-muted-foreground">{u.challengesCompleted} completed</td>
+                                                        </tr>
+                                                    );
+                                                })
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination Controls Bar */}
+                                {listCandidates.length > 0 && (
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-muted-foreground">
+                                        <div>
+                                            Showing <strong className="text-foreground">{startRankIndex}–{endRankIndex}</strong> of <strong className="text-foreground">{listCandidates.length}</strong> Challengers
+                                        </div>
+
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={currentPage <= 1}
+                                                onClick={() => setLeaderboardPage((prev) => Math.max(1, prev - 1))}
+                                                className="h-8 px-3 rounded-xl text-xs flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                <ChevronLeft className="w-3.5 h-3.5" /> Prev
+                                            </Button>
+
+                                            {/* Page Number Pills */}
+                                            <div className="flex items-center gap-1">
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                                                    <button
+                                                        key={pageNum}
+                                                        type="button"
+                                                        onClick={() => setLeaderboardPage(pageNum)}
+                                                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                                                            currentPage === pageNum
+                                                                ? "bg-primary text-primary-foreground shadow-xs"
+                                                                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                                        }`}
+                                                    >
+                                                        {pageNum}
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                disabled={currentPage >= totalPages}
+                                                onClick={() => setLeaderboardPage((prev) => Math.min(totalPages, prev + 1))}
+                                                className="h-8 px-3 rounded-xl text-xs flex items-center gap-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                                            >
+                                                Next <ChevronRight className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })()}
                 </Card>
             )}
 

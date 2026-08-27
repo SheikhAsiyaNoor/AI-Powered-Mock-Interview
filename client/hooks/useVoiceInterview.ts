@@ -204,13 +204,23 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
             animationFrameRef.current = null;
         }
         if (micStreamRef.current) {
-            micStreamRef.current.getTracks().forEach((track) => track.stop());
+            micStreamRef.current.getTracks().forEach((track) => {
+                try {
+                    track.stop();
+                    track.enabled = false;
+                } catch (e) {}
+            });
             micStreamRef.current = null;
         }
-        if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-            audioContextRef.current.close();
+        if (audioContextRef.current) {
+            try {
+                if (audioContextRef.current.state !== "closed") {
+                    audioContextRef.current.close().catch(() => {});
+                }
+            } catch (e) {}
             audioContextRef.current = null;
         }
+        analyserRef.current = null;
         setMicVolume(0);
     };
 
@@ -291,6 +301,9 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
         if (recognitionRef.current) {
             try {
                 recognitionRef.current.stop();
+            } catch (e) {}
+            try {
+                recognitionRef.current.abort();
             } catch (e) {}
         }
         stopAudioAnalyzer();

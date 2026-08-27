@@ -1,12 +1,12 @@
 const express = require("express");
 const { protect } = require("../middleware/auth");
 const multer = require("multer");
-const { analyzeResume } = require("../controllers/resumeController");
+const { analyzeResume, resumeChat } = require("../controllers/resumeController");
 const router = express.Router();
 
 const upload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    limits: { fileSize: 15 * 1024 * 1024 }, // 15MB limit
     fileFilter: (req, file, cb) => {
         const ext = (file.originalname || "").toLowerCase();
         const isAllowedExt = ext.endsWith(".pdf") || ext.endsWith(".doc") || ext.endsWith(".docx") || ext.endsWith(".txt");
@@ -26,6 +26,12 @@ const upload = multer({
     },
 });
 
-router.post("/analyze", protect, upload.single("resume"), analyzeResume);
+const uploadFields = upload.fields([
+    { name: "resume", maxCount: 1 },
+    { name: "jobDescriptionFile", maxCount: 1 },
+]);
+
+router.post("/analyze", protect, uploadFields, analyzeResume);
+router.post("/chat", protect, resumeChat);
 
 module.exports = router;

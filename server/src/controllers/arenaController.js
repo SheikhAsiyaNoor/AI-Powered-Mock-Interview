@@ -557,7 +557,7 @@ const getLeaderboard = async (req, res) => {
         const topProfiles = await UserGamification.find()
             .populate("userId", "name email role avatar")
             .sort({ totalXp: -1 })
-            .limit(50);
+            .limit(200);
 
         // Filter out orphaned profiles where user was deleted
         const validProfiles = topProfiles.filter(p => p.userId);

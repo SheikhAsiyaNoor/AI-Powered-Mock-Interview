@@ -91,9 +91,17 @@ export const VoiceInterviewRoom: React.FC<VoiceInterviewRoomProps> = ({
     setManualTranscript,
 }) => {
     const [showSettings, setShowSettings] = useState(false);
-    const [autoListenAfterAI, setAutoListenAfterAI] = useState(true);
+    const [autoListenAfterAI, setAutoListenAfterAI] = useState(false);
     const [isEditingTranscript, setIsEditingTranscript] = useState(false);
     const [activeTab, setActiveTab] = useState<"question" | "feedback">("question");
+
+    // Clean up all audio/speech synthesis when leaving voice room
+    useEffect(() => {
+        return () => {
+            stopListening();
+            stopSpeaking();
+        };
+    }, [stopListening, stopSpeaking]);
 
     // Auto-speak when question changes if enabled
     const lastSpokenQuestionRef = useRef<string>("");

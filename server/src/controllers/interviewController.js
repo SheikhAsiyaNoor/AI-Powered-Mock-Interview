@@ -75,18 +75,24 @@ const submitAnswer = async (req, res) => {
             interview = await Interview.findOne({ _id: sessionId, userId: req.userId });
         }
 
-        const currentDiff = interview.currDifficulty || "Medium"
-        const isSkipAction = isSkipped || /^(skip|pass|i don't know|next|dont know)$/i.test(answer.trim())
-        let evaluation = "Weak"
-        let evalScore = 30
+        const currentDiff = interview?.currDifficulty || "Medium";
+        const isSkipAction = isSkipped || /^(skip|pass|i don't know|next|dont know|no idea)$/i.test(answer.trim());
+        let evaluation = "Weak";
+        let evalScore = 15;
+        let technicalAccuracy = 10;
+        let communicationClarity = 20;
+        let problemSolving = 15;
 
         let feedback = "No answer given. Skipped topic.";
 
         if (isSkipAction) {
-            evaluation = "Skipped"
-            evalScore = 0
-            feedback = "Question skipped. Moving on to a lower difficulty foundational topic."
-            interview.skippedQuestionsCount = (interview.skippedQuestionsCount || 0) + 1
+            evaluation = "Skipped";
+            evalScore = 0;
+            technicalAccuracy = 0;
+            communicationClarity = 0;
+            problemSolving = 0;
+            feedback = "Question skipped. Moving on to a foundational topic.";
+            if (interview) interview.skippedQuestionsCount = (interview.skippedQuestionsCount || 0) + 1;
         } else {
             try {
                 const evalResponse = await groq.chat.completions.create({
@@ -95,29 +101,39 @@ const submitAnswer = async (req, res) => {
                         {
                             role: "user",
                             content: `
-                        You are an expert ${domain} interview evaluator, evaluating a candidate's answer for a ${domain} at ${currentDiff} level difficulty. Previous question context: "${interview.askedQuestions[interview.askedQuestions.length - 1] || ''}". Provide constructive feedback on this interview answer in 2-3 sentences. Focus on:
-                        - Clarity and structure of the response
-                        - Technical accuracy and depth
-                        - Communication skills
-                        - Areas for improvement
+                        You are an expert ${domain} interview evaluator evaluating a candidate's answer for a ${domain} question at ${currentDiff} level difficulty.
+                        Previous question context: "${interview?.askedQuestions?.[interview.askedQuestions.length - 1] || ''}"
+                        Candidate's Answer: "${answer}"
 
-                        Answer: "${answer}"
+                        EVALUATION RULES:
+                        - If the answer is gibberish, random keyboard smash (e.g. "asdfghjk"), off-topic, empty, or completely nonsensical:
+                          Rate evaluation as "Weak", score: 0 to 10, technicalAccuracy: 0, communicationClarity: 0, problemSolving: 0, and feedback explicitly noting that the response is invalid or unintelligible.
+                        - If the answer is partially correct or basic:
+                          Rate evaluation as "Medium", score: 40 to 65, technicalAccuracy: 40 to 65, communicationClarity: 50 to 70, problemSolving: 40 to 60.
+                        - If the answer is thorough, correct, well-structured:
+                          Rate evaluation as "Strong", score: 75 to 100, technicalAccuracy: 75 to 100, communicationClarity: 75 to 100, problemSolving: 75 to 100.
 
                         Return JSON ONLY in this format:
-                            {
-                              "evaluation": "Strong" | "Medium" | "Weak",
-                              "score": number (10 to 100),
-                              "feedback": "2-3 sentences of constructive feedback"
-                            }`
+                        {
+                          "evaluation": "Strong" | "Medium" | "Weak",
+                          "score": number (0 to 100),
+                          "technicalAccuracy": number (0 to 100),
+                          "communicationClarity": number (0 to 100),
+                          "problemSolving": number (0 to 100),
+                          "feedback": "2-3 sentences of direct constructive feedback"
+                        }`
                         }
                     ],
                     response_format: { type: "json_object" },
-                    temperature: 0.3
+                    temperature: 0.2
                 });
-                const parsed = JSON.parse(evalResponse.choices[0]?.message?.content || '{}')
-                evaluation = parsed.evaluation || "Medium"
-                evalScore = Math.max(10, Math.min(100, parsed.score || 60))
-                feedback = parsed.feedback || "Good effort. Try adding more technical examples and edge-case considerations."
+                const parsed = JSON.parse(evalResponse.choices[0]?.message?.content || '{}');
+                evaluation = parsed.evaluation || "Weak";
+                evalScore = Math.max(0, Math.min(100, typeof parsed.score === 'number' ? parsed.score : evaluation === 'Weak' ? 10 : evaluation === 'Medium' ? 55 : 85));
+                technicalAccuracy = Math.max(0, Math.min(100, typeof parsed.technicalAccuracy === 'number' ? parsed.technicalAccuracy : evalScore));
+                communicationClarity = Math.max(0, Math.min(100, typeof parsed.communicationClarity === 'number' ? parsed.communicationClarity : evalScore));
+                problemSolving = Math.max(0, Math.min(100, typeof parsed.problemSolving === 'number' ? parsed.problemSolving : evalScore));
+                feedback = parsed.feedback || "Answer evaluated based on technical depth and communication clarity.";
             } catch (groqErr) {
                 console.error("Groq API error on feedback:", groqErr.message || groqErr);
             }
@@ -130,30 +146,50 @@ const submitAnswer = async (req, res) => {
             nextDiff = currentDiff === "Hard" ? "Medium" : "Easy";
         }
 
-        interview.currDifficulty = nextDiff;
-        interview.difficultyHistory.push({
-            questionNumber: questionsAnswered + 1,
-            difficulty: currentDiff,
-            evaluation,
-            score: evalScore,
-        });
-
-        const isComplete = questionsAnswered >= 5;
-
         if (interview) {
-            interview.messages.push({ role: "user", content: isSkipAction ? "[Skipped Question]" : answer, timeStamp: new Date() })
-            interview.messages.push({ role: "ai", content: feedback, timeStamp: new Date() })
-            interview.questionsAnswered = questionsAnswered + 1
+            interview.currDifficulty = nextDiff;
+            interview.difficultyHistory.push({
+                questionNumber: questionsAnswered + 1,
+                difficulty: currentDiff,
+                evaluation,
+                score: evalScore,
+                technicalAccuracy,
+                communicationClarity,
+                problemSolving
+            });
+            interview.messages.push({ role: "user", content: isSkipAction ? "[Skipped Question]" : answer, timeStamp: new Date() });
+            interview.messages.push({ role: "ai", content: feedback, timeStamp: new Date() });
+            interview.questionsAnswered = questionsAnswered + 1;
         }
 
-        if (isComplete) {
-            const historySummary = interview.difficultyHistory.map(h => `Q${h.questionNumber} (${h.difficulty}): Evaluated ${h.evaluation} (${h.score}%)`).join(", ")
+        // 5 total questions (questionsAnswered: 0, 1, 2, 3, 4 -> 4 means 5th question is being submitted)
+        const isComplete = questionsAnswered >= 4 || (interview?.difficultyHistory?.length || 0) >= 5;
 
-            let overallScore = Math.round(
-                interview.difficultyHistory.reduce((acc, curr) => acc + curr.score, 0) / interview.difficultyHistory.length
-            )
+        if (isComplete && interview) {
+            const totalQuestionsCount = interview.difficultyHistory.length || 1;
+            const historySummary = interview.difficultyHistory.map(h => `Q${h.questionNumber} (${h.difficulty}): Evaluated ${h.evaluation} (${h.score}%)`).join(", ");
 
-            let progressionReport = `Candidate completed interview starting at Medium difficulty, reaching ${nextDiff} tier.`
+            const overallScore = Math.round(
+                interview.difficultyHistory.reduce((acc, curr) => acc + (curr.score || 0), 0) / totalQuestionsCount
+            );
+
+            const avgTech = Math.round(
+                interview.difficultyHistory.reduce((acc, curr) => acc + (curr.technicalAccuracy ?? curr.score ?? 0), 0) / totalQuestionsCount
+            );
+            const avgComm = Math.round(
+                interview.difficultyHistory.reduce((acc, curr) => acc + (curr.communicationClarity ?? curr.score ?? 0), 0) / totalQuestionsCount
+            );
+            const avgPS = Math.round(
+                interview.difficultyHistory.reduce((acc, curr) => acc + (curr.problemSolving ?? curr.score ?? 0), 0) / totalQuestionsCount
+            );
+
+            const dimensionScores = {
+                technicalAccuracy: avgTech,
+                communicationClarity: avgComm,
+                problemSolving: avgPS
+            };
+
+            let progressionReport = `Candidate completed interview ending at ${nextDiff} difficulty tier with an overall score of ${overallScore}%.`;
 
             try {
                 const reportRes = await groq.chat.completions.create({
@@ -161,7 +197,7 @@ const submitAnswer = async (req, res) => {
                     messages: [
                         {
                             role: "user",
-                            content: `Synthesize a final progression report for a ${domain} candidate based on this sequence: ${historySummary}.
+                            content: `Synthesize a final progression report for a ${domain} candidate based on this sequence: ${historySummary}. Overall score: ${overallScore}%.
                             Summarize difficulty trajectory, technical strengths, and key growth areas in 3 bullet points.`
                         }
                     ],
@@ -172,21 +208,20 @@ const submitAnswer = async (req, res) => {
                 console.error("Groq API error on generating report:", groqErr.message || groqErr);
             }
 
-            if (interview) {
-                interview.score = overallScore;
-                interview.isComplete = true;
-                interview.feedback = feedback;
-                interview.progressionReport = progressionReport
-                interview.duration = Math.max(
-                    1,
-                    Math.round((Date.now() - new Date(interview.createdAt).getTime()) / 60000)
-                );
-                await interview.save();
-            }
+            interview.score = overallScore;
+            interview.isComplete = true;
+            interview.feedback = feedback;
+            interview.progressionReport = progressionReport;
+            interview.duration = Math.max(
+                1,
+                Math.round((Date.now() - new Date(interview.createdAt).getTime()) / 60000)
+            );
+            await interview.save();
 
             return res.json({
                 feedback,
                 score: overallScore,
+                dimensionScores,
                 isComplete: true,
                 progressionReport,
                 difficultyHistory: interview.difficultyHistory,
