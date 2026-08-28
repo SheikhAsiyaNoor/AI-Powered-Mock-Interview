@@ -54,7 +54,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         const renderer: any = new marked.Renderer();
 
         // Custom Code Block Renderer with Highlight.js and Copy button
-        renderer.code = function ({ text, lang }: any) {
+        renderer.code = function (tokenOrCode: any, infoString?: string) {
+            const text = typeof tokenOrCode === "object" && tokenOrCode !== null ? (tokenOrCode.text || "") : String(tokenOrCode || "");
+            const lang = typeof tokenOrCode === "object" && tokenOrCode !== null ? (tokenOrCode.lang || "") : (infoString || "");
             const language = lang && hljs.getLanguage(lang) ? lang : undefined;
             let highlighted = text;
             if (language) {
@@ -83,19 +85,41 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         };
 
         // Inline Code styling
-        renderer.codespan = function ({ text }: any) {
+        renderer.codespan = function (tokenOrCode: any) {
+            const text = typeof tokenOrCode === "object" && tokenOrCode !== null ? (tokenOrCode.text || "") : String(tokenOrCode || "");
             return `<code class="px-1.5 py-0.5 rounded-md bg-muted/80 border border-border/50 text-blue-600 dark:text-blue-400 font-mono text-[11px]">${text}</code>`;
         };
 
         // Links with target="_blank"
-        renderer.link = function ({ href, title, text }: any) {
+        renderer.link = function (tokenOrHref: any, title?: string, text?: string) {
+            let href = "";
+            let linkTitle = "";
+            let linkText = "";
+            if (typeof tokenOrHref === "object" && tokenOrHref !== null) {
+                href = tokenOrHref.href || "";
+                linkTitle = tokenOrHref.title || "";
+                linkText = tokenOrHref.text || (this.parser && tokenOrHref.tokens ? this.parser.parseInline(tokenOrHref.tokens) : "") || href;
+            } else {
+                href = tokenOrHref || "";
+                linkTitle = title || "";
+                linkText = text || href;
+            }
             return `<a href="${href}" ${
-                title ? `title="${title}"` : ""
-            } target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">${text}</a>`;
+                linkTitle ? `title="${linkTitle}"` : ""
+            } target="_blank" rel="noopener noreferrer" class="text-blue-600 dark:text-blue-400 hover:underline font-semibold">${linkText}</a>`;
         };
 
         // Headings
-        renderer.heading = function ({ text, depth }: any) {
+        renderer.heading = function (tokenOrText: any, depthLevel?: number) {
+            let text = "";
+            let depth = 4;
+            if (typeof tokenOrText === "object" && tokenOrText !== null) {
+                depth = tokenOrText.depth || 4;
+                text = (this.parser && tokenOrText.tokens ? this.parser.parseInline(tokenOrText.tokens) : tokenOrText.text) || "";
+            } else {
+                text = String(tokenOrText || "");
+                depth = depthLevel || 4;
+            }
             const sizes: Record<number, string> = {
                 1: "text-base font-extrabold mt-4 mb-2 text-foreground",
                 2: "text-sm font-bold mt-3 mb-1.5 text-foreground",
@@ -107,23 +131,75 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
         };
 
         // Blockquotes
-        renderer.blockquote = function ({ text }: any) {
-            return `<blockquote class="border-l-4 border-blue-600/60 pl-3.5 py-1 my-2.5 bg-blue-500/5 text-muted-foreground text-xs italic rounded-r-xl">${text}</blockquote>`;
+        renderer.blockquote = function (tokenOrQuote: any) {
+            let body = "";
+            if (typeof tokenOrQuote === "object" && tokenOrQuote !== null) {
+                body = (this.parser && tokenOrQuote.tokens ? this.parser.parse(tokenOrQuote.tokens) : tokenOrQuote.text) || "";
+            } else {
+                body = String(tokenOrQuote || "");
+            }
+            return `<blockquote class="border-l-4 border-blue-600/60 pl-3.5 py-1 my-2.5 bg-blue-500/5 text-muted-foreground text-xs italic rounded-r-xl">${body}</blockquote>`;
         };
 
         // Unordered and ordered lists
-        renderer.list = function ({ body, ordered }: any) {
+        renderer.list = function (tokenOrBody: any, isOrdered?: boolean, startNum?: number) {
+            let body = "";
+            let ordered = false;
+            let start = "";
+
+            if (typeof tokenOrBody === "object" && tokenOrBody !== null) {
+                ordered = Boolean(tokenOrBody.ordered);
+                start = tokenOrBody.start ? ` start="${tokenOrBody.start}"` : "";
+                if (tokenOrBody.items && Array.isArray(tokenOrBody.items)) {
+                    for (let i = 0; i < tokenOrBody.items.length; i++) {
+                        body += this.listitem(tokenOrBody.items[i]);
+                    }
+                } else if (tokenOrBody.body) {
+                    body = tokenOrBody.body;
+                } else if (tokenOrBody.raw) {
+                    body = tokenOrBody.raw;
+                }
+            } else {
+                body = String(tokenOrBody || "");
+                ordered = Boolean(isOrdered);
+                start = startNum ? ` start="${startNum}"` : "";
+            }
+
             return ordered
-                ? `<ol class="list-decimal list-outside ml-4 my-2 space-y-1 text-xs leading-relaxed text-foreground">${body}</ol>`
+                ? `<ol class="list-decimal list-outside ml-4 my-2 space-y-1 text-xs leading-relaxed text-foreground"${start}>${body}</ol>`
                 : `<ul class="list-disc list-outside ml-4 my-2 space-y-1 text-xs leading-relaxed text-foreground">${body}</ul>`;
         };
 
-        renderer.listitem = function ({ text }: any) {
-            return `<li class="my-0.5">${text}</li>`;
+        renderer.listitem = function (item: any) {
+            let itemBody = "";
+            if (typeof item === "object" && item !== null) {
+                if (item.task) {
+                    const checkbox = this.checkbox
+                        ? this.checkbox({ checked: !!item.checked })
+                        : `<input disabled="" type="checkbox" ${item.checked ? 'checked="" ' : ""}/> `;
+                    itemBody += checkbox;
+                }
+                if (this.parser && item.tokens) {
+                    itemBody += this.parser.parse(item.tokens, !!item.loose);
+                } else if (item.text) {
+                    itemBody += item.text;
+                } else if (item.raw) {
+                    itemBody += item.raw;
+                }
+            } else {
+                itemBody = String(item || "");
+            }
+            return `<li class="my-0.5">${itemBody}</li>`;
         };
 
         // Paragraphs
-        renderer.paragraph = function ({ text }: any) {
+        renderer.paragraph = function (tokenOrText: any) {
+            let text = "";
+            if (typeof tokenOrText === "object" && tokenOrText !== null) {
+                text = (this.parser && tokenOrText.tokens ? this.parser.parseInline(tokenOrText.tokens) : tokenOrText.text) || "";
+            } else {
+                text = String(tokenOrText || "");
+            }
             return `<p class="mb-2 last:mb-0 leading-relaxed">${text}</p>`;
         };
 

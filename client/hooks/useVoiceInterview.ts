@@ -204,6 +204,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
     const [transcript, setTranscript] = useState("");
     const [interimTranscript, setInterimTranscript] = useState("");
     const [isSTTSupported, setIsSTTSupported] = useState(false);
+    const [isTTSSupported, setIsTTSSupported] = useState(false);
     const [micVolume, setMicVolume] = useState(0);
     const [micError, setMicError] = useState<string | null>(null);
 
@@ -217,6 +218,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
     // Initialize TTS
     useEffect(() => {
         if (typeof window !== "undefined" && "speechSynthesis" in window) {
+            setIsTTSSupported(true);
             synthRef.current = window.speechSynthesis;
 
             const updateVoices = () => {
@@ -582,6 +584,7 @@ export function useVoiceInterview(options: UseVoiceInterviewOptions = {}) {
         micVolume,
         micError,
         isSTTSupported,
+        isTTSSupported,
         startListening,
         stopListening,
         resetTranscript,
