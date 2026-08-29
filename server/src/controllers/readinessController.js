@@ -191,24 +191,21 @@ const getReadinessReport = async (req, res) => {
             readiness.candidateLevel = req.query.level;
         }
 
-        // Compute scores
+        // Compute scores accurately (0 for new users who haven't completed sessions/uploaded resume)
         let interviewScore = 0;
         if (interviews.length > 0) {
             const totalScore = interviews.reduce((acc, curr) => acc + (curr.score || 0), 0);
             interviewScore = Math.round(totalScore / interviews.length);
-        } else {
-            interviewScore = 65; // Base starting benchmark
         }
 
         let skillScore = 0;
         if (assessments.length > 0) {
             const totalSkillScore = assessments.reduce((acc, curr) => acc + (curr.score || 0), 0);
             skillScore = Math.round(totalSkillScore / assessments.length);
-        } else {
-            skillScore = 70; // Base starting benchmark
         }
 
-        const resumeScore = readiness.breakdown.resumeScore || 75; // Baseline resume score
+        // For new users without an uploaded resume, resumeScore is 0
+        const resumeScore = typeof readiness.breakdown?.resumeScore === "number" ? readiness.breakdown.resumeScore : 0;
 
         readiness.breakdown = {
             resumeScore,
@@ -337,13 +334,13 @@ const getReadinessReport = async (req, res) => {
         res.json({ readiness, interviewCount: interviews.length, assessmentCount: assessments.length });
     } catch (err) {
         console.error("Error fetching readiness report:", err);
-        const defaultData = getDefaultGapAndRoadmap("Fresher", "Software Engineer", { interviewScore: 65, skillScore: 70 });
+        const defaultData = getDefaultGapAndRoadmap("Fresher", "Software Engineer", { interviewScore: 0, skillScore: 0 });
         const fallbackReport = {
             candidateLevel: "Fresher",
             targetRole: "Software Engineer",
-            overallScore: 69,
-            category: "High Potential Candidate",
-            breakdown: { resumeScore: 75, interviewScore: 65, skillScore: 70 },
+            overallScore: 0,
+            category: "Needs Improvement",
+            breakdown: { resumeScore: 0, interviewScore: 0, skillScore: 0 },
             scoringConfig: { resumeWeight: 30, interviewWeight: 50, skillWeight: 20, placementReadyThreshold: 80, highPotentialThreshold: 65 },
             gapAnalysis: {
                 weakTechnicalAreas: defaultData.weakTechnicalAreas,
@@ -353,11 +350,11 @@ const getReadinessReport = async (req, res) => {
             roadmap: defaultData.roadmap,
             history: [{
                 timestamp: new Date(),
-                overallScore: 69,
-                resumeScore: 75,
-                interviewScore: 65,
-                skillScore: 70,
-                category: "High Potential Candidate",
+                overallScore: 0,
+                resumeScore: 0,
+                interviewScore: 0,
+                skillScore: 0,
+                category: "Needs Improvement",
                 candidateLevel: "Fresher"
             }],
             lastEvaluatedAt: new Date()

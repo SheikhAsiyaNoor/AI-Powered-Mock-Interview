@@ -1,4 +1,7 @@
 const Groq = require("groq-sdk");
+const Readiness = require("../models/Readiness");
+const Interview = require("../models/Interview");
+const SkillAssessment = require("../models/SkillAssessment");
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
@@ -257,6 +260,88 @@ RULES:
                     { label: "React", reason: "Component-driven development fit", confidence: 85 },
                     { label: "System Design", reason: "Core architectural capability", confidence: 80 }
                 ];
+            }
+        }
+
+        // Automatically sync evaluated ATS score into user's Placement Readiness record
+        if (req.userId && typeof analysis.atsScore === "number") {
+            try {
+                let readiness = await Readiness.findOne({ userId: req.userId });
+                if (!readiness) {
+                    const mappedLevel = analysis.experienceLevel === "Senior" ? "Experienced" : analysis.experienceLevel === "Junior" ? "Fresher" : "Internship Seeker";
+                    readiness = new Readiness({
+                        userId: req.userId,
+                        candidateLevel: mappedLevel,
+                        targetRole: targetRole || "Software Engineer",
+                        scoringConfig: {
+                            resumeWeight: 30,
+                            interviewWeight: 50,
+                            skillWeight: 20,
+                            placementReadyThreshold: 80,
+                            highPotentialThreshold: 65
+                        }
+                    });
+                }
+
+                readiness.breakdown = readiness.breakdown || {};
+                const validResumeScore = Math.max(0, Math.min(100, Math.round(analysis.atsScore)));
+                readiness.breakdown.resumeScore = validResumeScore;
+
+                if (targetRole) {
+                    readiness.targetRole = targetRole;
+                }
+
+                // Fetch real interview and skill assessment data to recalculate overall score
+                const interviews = await Interview.find({ userId: req.userId, isComplete: true }).sort({ createdAt: -1 });
+                const assessments = await SkillAssessment.find({ userId: req.userId }).sort({ createdAt: -1 });
+
+                const interviewScore = interviews.length > 0
+                    ? Math.round(interviews.reduce((acc, curr) => acc + (curr.score || 0), 0) / interviews.length)
+                    : 0;
+
+                const skillScore = assessments.length > 0
+                    ? Math.round(assessments.reduce((acc, curr) => acc + (curr.score || 0), 0) / assessments.length)
+                    : 0;
+
+                readiness.breakdown.interviewScore = interviewScore;
+                readiness.breakdown.skillScore = skillScore;
+
+                // Calculate updated weighted score
+                const rW = readiness.scoringConfig?.resumeWeight || 30;
+                const iW = readiness.scoringConfig?.interviewWeight || 50;
+                const sW = readiness.scoringConfig?.skillWeight || 20;
+                const totalWeight = rW + iW + sW || 100;
+                const rawScore = (validResumeScore * rW + interviewScore * iW + skillScore * sW) / totalWeight;
+                const overallScore = Math.min(100, Math.max(0, Math.round(rawScore)));
+
+                let category = "Needs Improvement";
+                const pReady = readiness.scoringConfig?.placementReadyThreshold || 80;
+                const hPotential = readiness.scoringConfig?.highPotentialThreshold || 65;
+
+                if (overallScore >= pReady) {
+                    category = "Placement Ready";
+                } else if (overallScore >= hPotential) {
+                    category = "High Potential Candidate";
+                }
+
+                readiness.overallScore = overallScore;
+                readiness.category = category;
+                readiness.lastEvaluatedAt = new Date();
+
+                readiness.history.push({
+                    timestamp: new Date(),
+                    overallScore,
+                    resumeScore: validResumeScore,
+                    interviewScore,
+                    skillScore,
+                    category,
+                    candidateLevel: readiness.candidateLevel || "Fresher"
+                });
+
+                await readiness.save();
+                console.log(`[Readiness Sync] Synced ATS score ${validResumeScore}% to user ${req.userId}. New Overall: ${overallScore}%`);
+            } catch (readinessSyncErr) {
+                console.error("Warning: Error syncing ATS score to Readiness:", readinessSyncErr.message || readinessSyncErr);
             }
         }
 

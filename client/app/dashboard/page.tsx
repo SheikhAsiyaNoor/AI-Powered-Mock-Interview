@@ -1,6 +1,7 @@
 "use client";
 import { useAuth } from "@/context/Authcontext";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { useState, useEffect, useRef, Suspense } from "react";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
@@ -552,6 +553,20 @@ function ResumePanel({ onDomainSelect }: { onDomainSelect: (d: string) => void }
                 {/* Results Step */}
                 {step === "results" && analysis && (
                     <div className="space-y-6 pt-2">
+                        {/* Auto-Sync with Readiness Engine Notification */}
+                        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-xs">
+                            <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>ATS Score ({atsScore}%) automatically synced to your AI Placement Readiness Engine!</span>
+                            </div>
+                            <Link
+                                href="/readiness"
+                                className="shrink-0 font-extrabold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                            >
+                                View Readiness Dashboard & Roadmap →
+                            </Link>
+                        </div>
+
                         {/* ATS Score & Dimension Breakdown Card */}
                         <Card className="p-6 border border-border/60 rounded-3xl bg-card shadow-xs">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">

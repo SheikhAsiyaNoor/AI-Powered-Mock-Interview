@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import { useAuth } from "@/context/Authcontext";
 import api from "@/lib/axios";
@@ -29,7 +30,10 @@ import {
     Brain,
     Code,
     Cpu,
-    Compass
+    Compass,
+    Upload,
+    FileText,
+    ArrowUpRight
 } from "lucide-react";
 
 interface RoadmapItem {
@@ -417,6 +421,31 @@ export default function ReadinessPage() {
                     </div>
                 </div>
 
+                {/* RESUME UPLOAD PROMPT BANNER FOR NEW USERS */}
+                {breakdown.resumeScore === 0 && (
+                    <div className="p-4 sm:p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+                        <div className="flex items-start sm:items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-600 flex items-center justify-center font-bold text-lg shrink-0">
+                                📄
+                            </div>
+                            <div>
+                                <p className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+                                    No Resume Analyzed Yet (Resume Score: 0%)
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                    Upload your resume in the Dashboard to analyze your ATS match, extract technical strengths, and compute your overall Placement Readiness score.
+                                </p>
+                            </div>
+                        </div>
+                        <Link
+                            href="/dashboard"
+                            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs transition"
+                        >
+                            <Upload className="w-3.5 h-3.5" /> Upload Resume in Dashboard ↗
+                        </Link>
+                    </div>
+                )}
+
                 {/* OVERALL SCORE & BREAKDOWN METRICS */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Overall Gauge Dial */}
@@ -490,13 +519,29 @@ export default function ReadinessPage() {
                                         {scoringConfig.resumeWeight}% Weight
                                     </span>
                                 </div>
-                                <div className="text-2xl font-bold text-foreground">{breakdown.resumeScore}%</div>
+                                <div className="flex items-baseline justify-between">
+                                    <div className="text-2xl font-bold text-foreground">{breakdown.resumeScore}%</div>
+                                    {breakdown.resumeScore === 0 ? (
+                                        <Link href="/dashboard" className="text-[11px] font-bold text-amber-600 hover:underline flex items-center gap-0.5">
+                                            Upload ↗
+                                        </Link>
+                                    ) : (
+                                        <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                                            ATS Synced ✓
+                                        </span>
+                                    )}
+                                </div>
                                 <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
                                     <div
-                                        className="bg-blue-500 h-full rounded-full transition-all"
-                                        style={{ width: `${breakdown.resumeScore}%` }}
+                                        className={`h-full rounded-full transition-all ${breakdown.resumeScore === 0 ? "bg-amber-500" : "bg-blue-500"}`}
+                                        style={{ width: `${Math.max(breakdown.resumeScore, breakdown.resumeScore === 0 ? 0 : 4)}%` }}
                                     ></div>
                                 </div>
+                                {breakdown.resumeScore === 0 && (
+                                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                        ⚠️ 0% — Please upload resume to analyze
+                                    </p>
+                                )}
                             </div>
 
                             {/* Interview Score */}
