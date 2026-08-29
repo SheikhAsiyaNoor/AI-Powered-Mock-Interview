@@ -268,79 +268,40 @@ export default function UserPublicProfilePage() {
                         <div className="space-y-3 text-xs">
                             {/* Primary Email */}
                             <div className="p-3 rounded-2xl bg-muted/30 border border-border/40 space-y-1">
-                                <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                    <span className="flex items-center gap-1 font-semibold">
-                                        <Mail className="w-3.5 h-3.5 text-blue-500" /> Primary Email
-                                    </span>
-                                    <span
-                                        className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border ${
-                                            profile.isEmailPublic
-                                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                                                : "bg-muted text-muted-foreground border-border/50"
-                                        }`}
-                                    >
-                                        {profile.isEmailPublic ? "Public 🌐" : "Private 🔒"}
-                                    </span>
-                                </div>
+                                <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-semibold">
+                                    <Mail className="w-3.5 h-3.5 text-blue-500" /> Primary Email
+                                </span>
                                 {profile.isEmailPublic && profile.email ? (
                                     <div className="font-mono text-foreground font-semibold break-all">{profile.email}</div>
                                 ) : (
-                                    <div className="text-muted-foreground/60 italic flex items-center gap-1">
-                                        <Lock className="w-3 h-3" /> Private (Hidden from profile)
-                                    </div>
+                                    <div className="text-muted-foreground/60 italic">Private</div>
                                 )}
                             </div>
 
                             {/* Recovery Email */}
-                            {(profile.recoveryEmail || isOwner) && (
+                            {(profile.recoveryEmail || (isOwner && profile.privacySettings?.isRecoveryEmailPublic !== undefined)) && (
                                 <div className="p-3 rounded-2xl bg-muted/30 border border-border/40 space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                        <span className="flex items-center gap-1 font-semibold">
-                                            <Mail className="w-3.5 h-3.5 text-emerald-500" /> Recovery Contact
-                                        </span>
-                                        <span
-                                            className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border ${
-                                                profile.isRecoveryEmailPublic
-                                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                                                    : "bg-muted text-muted-foreground border-border/50"
-                                            }`}
-                                        >
-                                            {profile.isRecoveryEmailPublic ? "Public 🌐" : "Private 🔒"}
-                                        </span>
-                                    </div>
+                                    <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-semibold">
+                                        <Mail className="w-3.5 h-3.5 text-emerald-500" /> Recovery Contact
+                                    </span>
                                     {profile.isRecoveryEmailPublic && profile.recoveryEmail ? (
                                         <div className="font-mono text-foreground font-semibold break-all">{profile.recoveryEmail}</div>
                                     ) : (
-                                        <div className="text-muted-foreground/60 italic flex items-center gap-1">
-                                            <Lock className="w-3 h-3" /> Private (Hidden from profile)
-                                        </div>
+                                        <div className="text-muted-foreground/60 italic">Private</div>
                                     )}
                                 </div>
                             )}
 
                             {/* Phone Number */}
-                            {(profile.phoneNumber || isOwner) && (
+                            {(profile.phoneNumber || (isOwner && profile.privacySettings?.isPhonePublic !== undefined)) && (
                                 <div className="p-3 rounded-2xl bg-muted/30 border border-border/40 space-y-1">
-                                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                                        <span className="flex items-center gap-1 font-semibold">
-                                            <Phone className="w-3.5 h-3.5 text-amber-500" /> Phone Contact
-                                        </span>
-                                        <span
-                                            className={`text-[9px] font-extrabold uppercase px-1.5 py-0.2 rounded border ${
-                                                profile.isPhonePublic
-                                                    ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/30"
-                                                    : "bg-muted text-muted-foreground border-border/50"
-                                            }`}
-                                        >
-                                            {profile.isPhonePublic ? "Public 🌐" : "Private 🔒"}
-                                        </span>
-                                    </div>
+                                    <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-semibold">
+                                        <Phone className="w-3.5 h-3.5 text-amber-500" /> Phone Contact
+                                    </span>
                                     {profile.isPhonePublic && profile.phoneNumber ? (
                                         <div className="font-mono text-foreground font-semibold">{profile.phoneNumber}</div>
                                     ) : (
-                                        <div className="text-muted-foreground/60 italic flex items-center gap-1">
-                                            <Lock className="w-3 h-3" /> Private (Hidden from profile)
-                                        </div>
+                                        <div className="text-muted-foreground/60 italic">Private</div>
                                     )}
                                 </div>
                             )}

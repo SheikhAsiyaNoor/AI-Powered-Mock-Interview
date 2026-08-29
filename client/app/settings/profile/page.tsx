@@ -876,7 +876,7 @@ export default function ProfileSettingsPage() {
                                 {form.bio || "No public bio provided yet. Add a short summary to stand out to recruiters!"}
                             </div>
 
-                            {/* Contact Details with Visibility Badges */}
+                            {/* Contact Details */}
                             <div className="space-y-2 text-xs">
                                 <div className="flex items-center justify-between text-muted-foreground">
                                     <span className="flex items-center gap-1.5">
@@ -885,9 +885,7 @@ export default function ProfileSettingsPage() {
                                     {form.privacySettings.isEmailPublic ? (
                                         <span className="font-mono text-foreground font-semibold">{user?.email}</span>
                                     ) : (
-                                        <span className="text-muted-foreground/60 italic flex items-center gap-1">
-                                            <Lock className="w-3 h-3" /> Hidden from public
-                                        </span>
+                                        <span className="text-muted-foreground/60 italic">Private</span>
                                     )}
                                 </div>
 
@@ -899,9 +897,7 @@ export default function ProfileSettingsPage() {
                                         {form.privacySettings.isRecoveryEmailPublic ? (
                                             <span className="font-mono text-foreground font-semibold">{form.recoveryEmail}</span>
                                         ) : (
-                                            <span className="text-muted-foreground/60 italic flex items-center gap-1">
-                                                <Lock className="w-3 h-3" /> Hidden from public
-                                            </span>
+                                            <span className="text-muted-foreground/60 italic">Private</span>
                                         )}
                                     </div>
                                 )}
@@ -914,9 +910,7 @@ export default function ProfileSettingsPage() {
                                         {form.privacySettings.isPhonePublic ? (
                                             <span className="font-mono text-foreground font-semibold">{form.phoneNumber}</span>
                                         ) : (
-                                            <span className="text-muted-foreground/60 italic flex items-center gap-1">
-                                                <Lock className="w-3 h-3" /> Hidden from public
-                                            </span>
+                                            <span className="text-muted-foreground/60 italic">Private</span>
                                         )}
                                     </div>
                                 )}
