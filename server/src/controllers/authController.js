@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const mongoose = require("mongoose");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const UserGamification = require("../models/UserGamification");
@@ -751,8 +752,21 @@ const getMe = async (req, res) => {
         res.status(200).json({
             id: user._id,
             name: user.name,
+            username: user.username || "",
             email: user.email,
+            recoveryEmail: user.recoveryEmail || "",
+            phoneNumber: user.phoneNumber || "",
+            avatar: user.avatar || "",
+            bio: user.bio || "",
             role: user.role || "student",
+            privacySettings: user.privacySettings || {
+                isEmailPublic: false,
+                isRecoveryEmailPublic: false,
+                isPhonePublic: false,
+                isStatsPublic: true,
+                isBadgesPublic: true,
+                isRankPublic: true
+            },
             isEmailVerified: user.isEmailVerified,
             activeSessionsCount: (user.activeSessions || []).length,
             unresolvedAlertsCount: (user.securityAlerts || []).filter(a => !a.resolved).length,
@@ -948,6 +962,241 @@ const googleAuth = async (req, res) => {
     }
 };
 
+// ==========================================
+// 10. USER PROFILE & PRIVACY CONTROLS
+// ==========================================
+
+// GET /api/auth/profile - Fetch full profile of current logged-in user
+const getUserProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id).select("-password -passwordHistory");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        let gamification = await UserGamification.findOne({ userId: req.user._id });
+        if (!gamification) {
+            gamification = {
+                totalXp: 0,
+                currentRank: "Novice",
+                level: 1,
+                currentStreak: 0,
+                maxStreak: 0,
+                challengesCompleted: 0,
+                pinnedBadgeId: "welcome_challenger",
+                badges: []
+            };
+        }
+
+        res.status(200).json({
+            user: {
+                id: user._id,
+                name: user.name,
+                username: user.username || "",
+                email: user.email,
+                recoveryEmail: user.recoveryEmail || "",
+                phoneNumber: user.phoneNumber || "",
+                avatar: user.avatar || "",
+                bio: user.bio || "",
+                role: user.role || "student",
+                isEmailVerified: user.isEmailVerified,
+                privacySettings: {
+                    isEmailPublic: user.privacySettings?.isEmailPublic ?? false,
+                    isRecoveryEmailPublic: user.privacySettings?.isRecoveryEmailPublic ?? false,
+                    isPhonePublic: user.privacySettings?.isPhonePublic ?? false,
+                    isStatsPublic: user.privacySettings?.isStatsPublic ?? true,
+                    isBadgesPublic: user.privacySettings?.isBadgesPublic ?? true,
+                    isRankPublic: user.privacySettings?.isRankPublic ?? true
+                },
+                createdAt: user.createdAt
+            },
+            gamification: {
+                totalXp: gamification.totalXp,
+                currentRank: gamification.currentRank,
+                level: gamification.level,
+                currentStreak: gamification.currentStreak,
+                maxStreak: gamification.maxStreak,
+                challengesCompleted: gamification.challengesCompleted,
+                pinnedBadgeId: gamification.pinnedBadgeId || "welcome_challenger",
+                badges: gamification.badges || []
+            }
+        });
+    } catch (err) {
+        console.error("Get user profile error:", err);
+        res.status(500).json({ message: "Error fetching user profile", error: err.message });
+    }
+};
+
+// PUT /api/auth/profile - Update user profile & privacy settings
+const updateUserProfile = async (req, res) => {
+    try {
+        const { name, username, bio, recoveryEmail, phoneNumber, avatar, privacySettings } = req.body;
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (name && typeof name === "string" && name.trim()) {
+            user.name = name.trim();
+        }
+
+        if (typeof username === "string") {
+            const cleanUsername = username.trim().toLowerCase();
+            if (cleanUsername && cleanUsername !== user.username) {
+                // Validate format: letters, numbers, underscores, dashes (3-30 characters)
+                const usernameRegex = /^[a-z0-9_-]{3,30}$/;
+                if (!usernameRegex.test(cleanUsername)) {
+                    return res.status(400).json({
+                        message: "Username must be 3-30 characters and contain only letters, numbers, underscores, or hyphens."
+                    });
+                }
+
+                // Check uniqueness
+                const existingUser = await User.findOne({ username: cleanUsername, _id: { $ne: user._id } });
+                if (existingUser) {
+                    return res.status(400).json({ message: "This username is already taken. Please choose another one." });
+                }
+                user.username = cleanUsername;
+            } else if (cleanUsername === "") {
+                user.username = undefined;
+            }
+        }
+
+        if (typeof bio === "string") {
+            user.bio = bio.slice(0, 500);
+        }
+
+        if (typeof recoveryEmail === "string") {
+            user.recoveryEmail = recoveryEmail.trim().toLowerCase();
+        }
+
+        if (typeof phoneNumber === "string") {
+            user.phoneNumber = phoneNumber.trim();
+        }
+
+        if (typeof avatar === "string") {
+            user.avatar = avatar.trim();
+        }
+
+        if (privacySettings && typeof privacySettings === "object") {
+            user.privacySettings = {
+                isEmailPublic: Boolean(privacySettings.isEmailPublic),
+                isRecoveryEmailPublic: Boolean(privacySettings.isRecoveryEmailPublic),
+                isPhonePublic: Boolean(privacySettings.isPhonePublic),
+                isStatsPublic: privacySettings.isStatsPublic !== undefined ? Boolean(privacySettings.isStatsPublic) : true,
+                isBadgesPublic: privacySettings.isBadgesPublic !== undefined ? Boolean(privacySettings.isBadgesPublic) : true,
+                isRankPublic: privacySettings.isRankPublic !== undefined ? Boolean(privacySettings.isRankPublic) : true
+            };
+        }
+
+        await user.save();
+
+        res.status(200).json({
+            message: "Profile updated successfully!",
+            user: {
+                id: user._id,
+                name: user.name,
+                username: user.username || "",
+                email: user.email,
+                recoveryEmail: user.recoveryEmail || "",
+                phoneNumber: user.phoneNumber || "",
+                avatar: user.avatar || "",
+                bio: user.bio || "",
+                role: user.role || "student",
+                privacySettings: user.privacySettings,
+                isEmailVerified: user.isEmailVerified,
+                createdAt: user.createdAt
+            }
+        });
+    } catch (err) {
+        console.error("Update profile error:", err);
+        res.status(500).json({ message: "Error updating profile", error: err.message });
+    }
+};
+
+// GET /api/auth/users/:userId - Public Candidate Profile View with Privacy Enforcement
+const getPublicUserProfile = async (req, res) => {
+    try {
+        const { userId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ message: "User identifier is required" });
+        }
+
+        let user = null;
+        if (mongoose.Types.ObjectId.isValid(userId)) {
+            user = await User.findById(userId).select("-password -passwordHistory");
+        }
+        if (!user) {
+            // Search by username handle
+            user = await User.findOne({ username: userId.toLowerCase() }).select("-password -passwordHistory");
+        }
+
+        // Check if requester is authenticated and is the owner
+        let isOwner = false;
+        let authenticatedUser = req.user;
+        if (!authenticatedUser && req.headers.authorization && req.headers.authorization.startsWith("Bearer ")) {
+            try {
+                const token = req.headers.authorization.split(" ")[1];
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback_secret_key");
+                if (decoded && decoded.userId) {
+                    authenticatedUser = { _id: decoded.userId, role: decoded.role };
+                }
+            } catch (ignore) {}
+        }
+
+        if (authenticatedUser && authenticatedUser._id && authenticatedUser._id.toString() === user._id.toString()) {
+            isOwner = true;
+        } else if (authenticatedUser && authenticatedUser.role === "admin") {
+            isOwner = true; // Admins have oversight
+        }
+
+        // Fetch Gamification stats & badges
+        const gamification = await UserGamification.findOne({ userId: user._id });
+
+        const privacy = user.privacySettings || {
+            isEmailPublic: false,
+            isRecoveryEmailPublic: false,
+            isPhonePublic: false,
+            isStatsPublic: true,
+            isBadgesPublic: true,
+            isRankPublic: true
+        };
+
+        // Construct privacy-aware public payload
+        const profileData = {
+            id: user._id,
+            userId: user._id,
+            name: user.name,
+            username: user.username || "",
+            avatar: user.avatar || "",
+            bio: user.bio || "",
+            role: user.role || "student",
+            createdAt: user.createdAt,
+            isOwner,
+            privacySettings: isOwner ? privacy : undefined,
+            email: (isOwner || privacy.isEmailPublic) ? user.email : null,
+            recoveryEmail: (isOwner || privacy.isRecoveryEmailPublic) ? user.recoveryEmail : null,
+            phoneNumber: (isOwner || privacy.isPhonePublic) ? user.phoneNumber : null,
+            gamification: {
+                currentRank: (isOwner || privacy.isRankPublic !== false) ? (gamification?.currentRank || "Novice") : null,
+                level: (isOwner || privacy.isRankPublic !== false) ? (gamification?.level || 1) : null,
+                totalXp: (isOwner || privacy.isRankPublic !== false) ? (gamification?.totalXp || 0) : null,
+                currentStreak: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.currentStreak || 0) : null,
+                maxStreak: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.maxStreak || 0) : null,
+                challengesCompleted: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.challengesCompleted || 0) : null,
+                pinnedBadgeId: gamification?.pinnedBadgeId || "welcome_challenger",
+                badges: (isOwner || privacy.isBadgesPublic !== false) ? (gamification?.badges || []) : [],
+                categoryStats: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.categoryStats || null) : null
+            }
+        };
+
+        res.status(200).json({ profile: profileData });
+    } catch (err) {
+        console.error("Get public profile error:", err);
+        res.status(500).json({ message: "Error loading candidate profile", error: err.message });
+    }
+};
+
 module.exports = {
     register,
     login,
@@ -963,5 +1212,8 @@ module.exports = {
     revokeOtherSessions,
     getLoginHistory,
     getSecurityAlerts,
-    resolveSecurityAlert
+    resolveSecurityAlert,
+    getUserProfile,
+    updateUserProfile,
+    getPublicUserProfile
 };

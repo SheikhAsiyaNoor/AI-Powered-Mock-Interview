@@ -49,9 +49,25 @@ const userSchema = new mongoose.Schema({
     email: { type: String, required: true, lowercase: true, unique: true, trim: true },
     password: { type: String, required: true, minlength: 6, trim: true },
     
+    // Profile Information
+    username: { type: String, trim: true, lowercase: true, sparse: true, index: true },
+    bio: { type: String, default: "", maxlength: 500, trim: true },
+    recoveryEmail: { type: String, default: "", lowercase: true, trim: true },
+    phoneNumber: { type: String, default: "", trim: true },
+    avatar: { type: String, default: "" },
+
+    // Granular Profile Privacy Controls
+    privacySettings: {
+        isEmailPublic: { type: Boolean, default: false },
+        isRecoveryEmailPublic: { type: Boolean, default: false },
+        isPhonePublic: { type: Boolean, default: false },
+        isStatsPublic: { type: Boolean, default: true },
+        isBadgesPublic: { type: Boolean, default: true },
+        isRankPublic: { type: Boolean, default: true }
+    },
+    
     // Google OAuth & SSO integration
     googleId: { type: String, sparse: true, index: true },
-    avatar: { type: String, default: "" },
     authProvider: {
         type: String,
         enum: ["local", "google"],

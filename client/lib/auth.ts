@@ -2,12 +2,26 @@ const TOKEN_KEY = "token";
 const USER_KEY = "user";
 const SESSION_KEY = "session_id";
 
+export interface PrivacySettings {
+    isEmailPublic?: boolean;
+    isRecoveryEmailPublic?: boolean;
+    isPhonePublic?: boolean;
+    isStatsPublic?: boolean;
+    isBadgesPublic?: boolean;
+    isRankPublic?: boolean;
+}
+
 export interface StoredUser {
     id: string;
     email: string;
     name: string;
+    username?: string;
+    bio?: string;
+    recoveryEmail?: string;
+    phoneNumber?: string;
     role: "student" | "mentor" | "admin";
     avatar?: string;
+    privacySettings?: PrivacySettings;
     isEmailVerified?: boolean;
     activeSessionsCount?: number;
     unresolvedAlertsCount?: number;

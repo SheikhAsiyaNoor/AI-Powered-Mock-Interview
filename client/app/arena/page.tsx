@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/context/Authcontext";
 import axiosInstance from "@/lib/axios";
 import {
@@ -553,26 +554,37 @@ export default function ArenaPage() {
                     {leaderboard.length >= 3 && (
                         <div className="grid grid-cols-3 gap-4 pt-4 pb-2 max-w-2xl mx-auto items-end">
                             {/* Rank 2 */}
-                            <div className="p-4 rounded-2xl bg-muted/40 border border-slate-300/40 text-center space-y-2 order-1">
+                            <Link
+                                href={`/users/${leaderboard[1].userId}`}
+                                className="p-4 rounded-2xl bg-muted/40 border border-slate-300/40 hover:border-primary/50 text-center space-y-2 order-1 block transition-all hover:scale-[1.03] cursor-pointer shadow-xs group"
+                            >
                                 <div className="text-2xl">🥈</div>
-                                <div className="font-bold text-sm truncate">{leaderboard[1].name}</div>
+                                <div className="font-bold text-sm truncate group-hover:text-primary transition-colors">{leaderboard[1].name}</div>
                                 <div className="text-xs font-mono font-bold text-primary">{leaderboard[1].xp} XP</div>
                                 <div className="text-[10px] text-muted-foreground">{leaderboard[1].tier}</div>
-                            </div>
+                            </Link>
+
                             {/* Rank 1 */}
-                            <div className="p-5 rounded-2xl bg-gradient-to-b from-amber-500/20 to-card border-2 border-amber-400 text-center space-y-2 order-2 scale-105 shadow-xl shadow-amber-500/10">
+                            <Link
+                                href={`/users/${leaderboard[0].userId}`}
+                                className="p-5 rounded-2xl bg-gradient-to-b from-amber-500/20 to-card border-2 border-amber-400 hover:border-amber-300 text-center space-y-2 order-2 scale-105 shadow-xl shadow-amber-500/10 block transition-all hover:scale-110 cursor-pointer group"
+                            >
                                 <Crown className="w-8 h-8 mx-auto text-amber-400 animate-bounce" />
-                                <div className="font-extrabold text-base truncate">{leaderboard[0].name}</div>
+                                <div className="font-extrabold text-base truncate group-hover:text-amber-500 transition-colors">{leaderboard[0].name}</div>
                                 <div className="text-sm font-mono font-extrabold text-amber-500">{leaderboard[0].xp} XP</div>
                                 <div className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">{leaderboard[0].tier}</div>
-                            </div>
+                            </Link>
+
                             {/* Rank 3 */}
-                            <div className="p-4 rounded-2xl bg-muted/40 border border-amber-700/40 text-center space-y-2 order-3">
+                            <Link
+                                href={`/users/${leaderboard[2].userId}`}
+                                className="p-4 rounded-2xl bg-muted/40 border border-amber-700/40 hover:border-primary/50 text-center space-y-2 order-3 block transition-all hover:scale-[1.03] cursor-pointer shadow-xs group"
+                            >
                                 <div className="text-2xl">🥉</div>
-                                <div className="font-bold text-sm truncate">{leaderboard[2].name}</div>
+                                <div className="font-bold text-sm truncate group-hover:text-primary transition-colors">{leaderboard[2].name}</div>
                                 <div className="text-xs font-mono font-bold text-primary">{leaderboard[2].xp} XP</div>
                                 <div className="text-[10px] text-muted-foreground">{leaderboard[2].tier}</div>
-                            </div>
+                            </Link>
                         </div>
                     )}
 
@@ -615,18 +627,26 @@ export default function ArenaPage() {
                                                     return (
                                                         <tr
                                                             key={u.userId}
-                                                            className={`hover:bg-muted/30 transition-colors ${
+                                                            onClick={() => router.push(`/users/${u.userId}`)}
+                                                            className={`hover:bg-muted/40 transition-colors cursor-pointer group ${
                                                                 u.isCurrentUser ? "bg-primary/10 font-bold" : ""
                                                             }`}
+                                                            title={`View ${u.name}'s Profile`}
                                                         >
                                                             <td className="py-3.5 px-4 font-mono font-extrabold text-muted-foreground">
                                                                 #{u.rank}
                                                             </td>
                                                             <td className="py-3.5 px-4 font-semibold text-foreground flex items-center gap-2">
-                                                                <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center text-[10px] text-primary font-bold">
-                                                                    {u.name.slice(0, 2).toUpperCase()}
+                                                                <div className="w-7 h-7 rounded-full bg-primary/20 overflow-hidden flex items-center justify-center text-[10px] text-primary font-bold shrink-0">
+                                                                    {u.avatar ? (
+                                                                        <img src={u.avatar} alt={u.name} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        u.name.slice(0, 2).toUpperCase()
+                                                                    )}
                                                                 </div>
-                                                                <span>{u.name}</span>
+                                                                <span className="group-hover:text-primary group-hover:underline transition-colors">
+                                                                    {u.name}
+                                                                </span>
                                                                 {u.isCurrentUser && (
                                                                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary text-primary-foreground font-bold">
                                                                         You

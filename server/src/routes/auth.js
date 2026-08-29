@@ -14,13 +14,16 @@ const {
     revokeOtherSessions,
     getLoginHistory,
     getSecurityAlerts,
-    resolveSecurityAlert
+    resolveSecurityAlert,
+    getUserProfile,
+    updateUserProfile,
+    getPublicUserProfile
 } = require("../controllers/authController");
 const { protect } = require("../middleware/auth");
 
 const router = express.Router();
 
-// Public Authentication
+// Public Authentication & Public Profile Lookups
 router.post("/register", register);
 router.post("/login", login);
 router.post("/google", googleAuth);
@@ -28,9 +31,12 @@ router.post("/verify-email", verifyEmail);
 router.post("/resend-verification", resendVerification);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
+router.get("/users/:userId", getPublicUserProfile);
 
-// Protected User & Security Settings
+// Protected User Profile & Security Settings
 router.get("/me", protect, getMe);
+router.get("/profile", protect, getUserProfile);
+router.put("/profile", protect, updateUserProfile);
 router.put("/change-password", protect, changePassword);
 
 // Session Management

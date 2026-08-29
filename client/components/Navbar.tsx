@@ -98,6 +98,16 @@ const Navbar = () => {
                         {isLoggedIn ? (
                             <div className="flex items-center gap-2">
                                 <Link
+                                    href="/settings/profile"
+                                    title="Profile & Privacy Settings"
+                                    className={`p-2 rounded-xl border border-border/50 text-xs font-semibold hover:bg-muted transition-colors ${
+                                        pathName === "/settings/profile" ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-blue-950/60 dark:border-blue-700" : "text-muted-foreground"
+                                    }`}
+                                >
+                                    <UserIcon className="w-4 h-4" />
+                                </Link>
+
+                                <Link
                                     href="/settings/security"
                                     title="Security Settings & Active Sessions"
                                     className={`p-2 rounded-xl border border-border/50 text-xs font-semibold hover:bg-muted transition-colors ${
@@ -107,23 +117,35 @@ const Navbar = () => {
                                     <Lock className="w-4 h-4" />
                                 </Link>
 
-                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 border border-border/50 text-xs font-semibold">
-                                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-[10px]">
-                                        {user?.name?.[0]?.toUpperCase() || "U"}
-                                    </div>
-                                    <span className="text-foreground max-w-[100px] truncate">{user?.name || "User"}</span>
-                                    
-                                    {/* Role Badge */}
-                                    <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
-                                        user?.role === "admin"
-                                            ? "bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
-                                            : user?.role === "mentor"
-                                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
-                                            : "bg-blue-100/80 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300"
-                                    }`}>
-                                        {user?.role || "student"}
-                                    </span>
-                                </div>
+                                {user?.id && (
+                                    <Link
+                                        href={`/users/${user.id}`}
+                                        title="View Your Public Profile"
+                                        className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border/50 text-xs font-semibold transition-colors group cursor-pointer"
+                                    >
+                                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white overflow-hidden flex items-center justify-center font-bold text-[10px]">
+                                            {user?.avatar ? (
+                                                <img src={user.avatar} alt="User" className="w-full h-full object-cover" />
+                                            ) : (
+                                                user?.name?.[0]?.toUpperCase() || "U"
+                                            )}
+                                        </div>
+                                        <span className="text-foreground max-w-[100px] truncate group-hover:text-blue-600 transition-colors">
+                                            {user?.name || "User"}
+                                        </span>
+                                        
+                                        {/* Role Badge */}
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold uppercase ${
+                                            user?.role === "admin"
+                                                ? "bg-purple-100 text-purple-700 dark:bg-purple-950/80 dark:text-purple-300 border border-purple-200 dark:border-purple-800"
+                                                : user?.role === "mentor"
+                                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                                                : "bg-blue-100/80 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300"
+                                        }`}>
+                                            {user?.role || "student"}
+                                        </span>
+                                    </Link>
+                                )}
 
                                 <Button
                                     variant="outline"
@@ -180,13 +202,31 @@ const Navbar = () => {
                     ))}
 
                     {isLoggedIn && (
-                        <Link
-                            href="/settings/security"
-                            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
-                        >
-                            <Lock className="w-4 h-4 text-blue-600" />
-                            <span>Security & Active Sessions</span>
-                        </Link>
+                        <>
+                            {user?.id && (
+                                <Link
+                                    href={`/users/${user.id}`}
+                                    className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
+                                >
+                                    <UserIcon className="w-4 h-4 text-blue-600" />
+                                    <span>My Public Profile</span>
+                                </Link>
+                            )}
+                            <Link
+                                href="/settings/profile"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
+                            >
+                                <UserIcon className="w-4 h-4 text-purple-600" />
+                                <span>Profile & Privacy Settings</span>
+                            </Link>
+                            <Link
+                                href="/settings/security"
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-muted"
+                            >
+                                <Lock className="w-4 h-4 text-blue-600" />
+                                <span>Security & Active Sessions</span>
+                            </Link>
+                        </>
                     )}
 
                     <div className="pt-2 border-t border-border flex flex-col gap-2">
