@@ -1163,6 +1163,13 @@ const getPublicUserProfile = async (req, res) => {
         };
 
         // Construct privacy-aware public payload
+        const isEmailPublic = Boolean(privacy.isEmailPublic);
+        const isRecoveryEmailPublic = Boolean(privacy.isRecoveryEmailPublic);
+        const isPhonePublic = Boolean(privacy.isPhonePublic);
+        const isRankPublic = Boolean(privacy.isRankPublic !== false);
+        const isStatsPublic = Boolean(privacy.isStatsPublic !== false);
+        const isBadgesPublic = Boolean(privacy.isBadgesPublic !== false);
+
         const profileData = {
             id: user._id,
             userId: user._id,
@@ -1173,20 +1180,26 @@ const getPublicUserProfile = async (req, res) => {
             role: user.role || "student",
             createdAt: user.createdAt,
             isOwner,
+            isEmailPublic,
+            isRecoveryEmailPublic,
+            isPhonePublic,
+            isRankPublic,
+            isStatsPublic,
+            isBadgesPublic,
             privacySettings: isOwner ? privacy : undefined,
-            email: (isOwner || privacy.isEmailPublic) ? user.email : null,
-            recoveryEmail: (isOwner || privacy.isRecoveryEmailPublic) ? user.recoveryEmail : null,
-            phoneNumber: (isOwner || privacy.isPhonePublic) ? user.phoneNumber : null,
+            email: isEmailPublic ? user.email : null,
+            recoveryEmail: isRecoveryEmailPublic ? user.recoveryEmail : null,
+            phoneNumber: isPhonePublic ? user.phoneNumber : null,
             gamification: {
-                currentRank: (isOwner || privacy.isRankPublic !== false) ? (gamification?.currentRank || "Novice") : null,
-                level: (isOwner || privacy.isRankPublic !== false) ? (gamification?.level || 1) : null,
-                totalXp: (isOwner || privacy.isRankPublic !== false) ? (gamification?.totalXp || 0) : null,
-                currentStreak: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.currentStreak || 0) : null,
-                maxStreak: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.maxStreak || 0) : null,
-                challengesCompleted: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.challengesCompleted || 0) : null,
+                currentRank: isRankPublic ? (gamification?.currentRank || "Novice") : null,
+                level: isRankPublic ? (gamification?.level || 1) : null,
+                totalXp: isRankPublic ? (gamification?.totalXp || 0) : null,
+                currentStreak: isStatsPublic ? (gamification?.currentStreak || 0) : null,
+                maxStreak: isStatsPublic ? (gamification?.maxStreak || 0) : null,
+                challengesCompleted: isStatsPublic ? (gamification?.challengesCompleted || 0) : null,
                 pinnedBadgeId: gamification?.pinnedBadgeId || "welcome_challenger",
-                badges: (isOwner || privacy.isBadgesPublic !== false) ? (gamification?.badges || []) : [],
-                categoryStats: (isOwner || privacy.isStatsPublic !== false) ? (gamification?.categoryStats || null) : null
+                badges: isBadgesPublic ? (gamification?.badges || []) : [],
+                categoryStats: isStatsPublic ? (gamification?.categoryStats || null) : null
             }
         };
 
