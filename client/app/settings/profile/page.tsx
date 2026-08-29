@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/Authcontext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -26,7 +26,12 @@ import {
     Flame,
     Zap,
     Crown,
-    Loader2
+    Loader2,
+    Upload,
+    Camera,
+    Trash2,
+    ImageIcon,
+    Maximize2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -43,9 +48,60 @@ const PRESET_AVATARS = [
     "https://api.dicebear.com/7.x/bottts/svg?seed=Vanguard"
 ];
 
+// Helper to auto-resize and center-crop any large image into a lightweight square avatar
+const resizeAndCropAvatar = (file: File, maxDimension = 320): Promise<{ dataUrl: string; originalSize: number; resizedSize: number; width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+        if (!file.type.startsWith("image/")) {
+            return reject(new Error("Please select a valid image file (PNG, JPG, WEBP, GIF)."));
+        }
+
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                if (!ctx) {
+                    return reject(new Error("Canvas context could not be created."));
+                }
+
+                // Calculate center square crop
+                const minSide = Math.min(img.width, img.height);
+                const sx = (img.width - minSide) / 2;
+                const sy = (img.height - minSide) / 2;
+
+                const targetSize = Math.min(maxDimension, minSide);
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+
+                // High quality image smoothing
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = "high";
+                ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, targetSize, targetSize);
+
+                const dataUrl = canvas.toDataURL("image/jpeg", 0.88);
+                const resizedBytes = Math.round((dataUrl.length * 3) / 4);
+
+                resolve({
+                    dataUrl,
+                    originalSize: file.size,
+                    resizedSize: resizedBytes,
+                    width: targetSize,
+                    height: targetSize
+                });
+            };
+            img.onerror = () => reject(new Error("Failed to decode the image file."));
+            img.src = readerEvent.target?.result as string;
+        };
+        reader.onerror = () => reject(new Error("Failed to read image file."));
+        reader.readAsDataURL(file);
+    });
+};
+
 export default function ProfileSettingsPage() {
     const { user, isLoggedIn, isLoading, refreshUser, updateUser } = useAuth();
     const router = useRouter();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [form, setForm] = useState({
         name: "",
@@ -67,7 +123,10 @@ export default function ProfileSettingsPage() {
     const [gamification, setGamification] = useState<any>(null);
     const [isFetching, setIsFetching] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [imageOptimizationMsg, setImageOptimizationMsg] = useState<string | null>(null);
     const [statusMsg, setStatusMsg] = useState<{ text: string; isError: boolean } | null>(null);
+    const [isDragOver, setIsDragOver] = useState(false);
 
     useEffect(() => {
         if (!isLoading && !isLoggedIn) {
@@ -113,6 +172,40 @@ export default function ProfileSettingsPage() {
             loadProfileData();
         }
     }, [isLoggedIn]);
+
+    const handleImageFile = async (file: File) => {
+        setIsUploadingImage(true);
+        setImageOptimizationMsg(null);
+        try {
+            const result = await resizeAndCropAvatar(file, 320);
+            setForm((prev) => ({ ...prev, avatar: result.dataUrl }));
+
+            const originalKb = (result.originalSize / 1024).toFixed(1);
+            const resizedKb = (result.resizedSize / 1024).toFixed(1);
+            setImageOptimizationMsg(`Optimized & Resized: ${originalKb} KB → ${resizedKb} KB (${result.width}×${result.height}px) ✨`);
+        } catch (err: any) {
+            console.error("Image processing error:", err);
+            setStatusMsg({ text: err.message || "Failed to process image.", isError: true });
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        setIsDragOver(false);
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            handleImageFile(file);
+        }
+    };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -235,39 +328,137 @@ export default function ProfileSettingsPage() {
                                 </span>
                             </div>
 
-                            {/* Avatar Picker */}
-                            <div className="space-y-3">
-                                <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Profile Picture / Avatar
-                                </label>
-                                
-                                <div className="flex flex-wrap items-center gap-3">
-                                    {PRESET_AVATARS.map((avatarUrl, idx) => (
+                            {/* Avatar Studio: Upload, Auto-Resize, Presets & Custom URL */}
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-500" /> Profile Picture & Avatar
+                                    </label>
+                                    {form.avatar && (
                                         <button
-                                            key={idx}
                                             type="button"
-                                            onClick={() => setForm((prev) => ({ ...prev, avatar: avatarUrl }))}
-                                            className={`w-12 h-12 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer p-1 bg-muted/40 ${
-                                                form.avatar === avatarUrl
-                                                    ? "border-blue-600 scale-105 shadow-md shadow-blue-500/20"
-                                                    : "border-border/60 hover:border-blue-400"
-                                            }`}
+                                            onClick={() => {
+                                                setForm((prev) => ({ ...prev, avatar: "" }));
+                                                setImageOptimizationMsg(null);
+                                            }}
+                                            className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 flex items-center gap-1 cursor-pointer"
                                         >
-                                            <img src={avatarUrl} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
+                                            <Trash2 className="w-3 h-3" /> Reset / Clear
                                         </button>
-                                    ))}
+                                    )}
                                 </div>
 
-                                <div className="pt-2">
+                                {/* Hidden File Input */}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                                    className="hidden"
+                                    onChange={handleFileChange}
+                                />
+
+                                {/* 1. Upload & Auto-Resize Dropzone */}
+                                <div
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setIsDragOver(true);
+                                    }}
+                                    onDragLeave={() => setIsDragOver(false)}
+                                    onDrop={handleDrop}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className={`p-4 sm:p-5 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col sm:flex-row items-center gap-4 ${
+                                        isDragOver
+                                            ? "border-blue-600 bg-blue-500/10 scale-[1.01]"
+                                            : "border-border/60 hover:border-blue-500/60 bg-muted/20 hover:bg-muted/40"
+                                    }`}
+                                >
+                                    <div className="w-16 h-16 rounded-2xl bg-muted/60 border border-border overflow-hidden shrink-0 flex items-center justify-center p-1 shadow-xs">
+                                        {form.avatar ? (
+                                            <img src={form.avatar} alt="Selected Avatar" className="w-full h-full object-cover rounded-xl" />
+                                        ) : (
+                                            <Camera className="w-7 h-7 text-muted-foreground" />
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-1 text-center sm:text-left flex-1 min-w-0">
+                                        <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                                            <span className="text-xs font-bold text-foreground">
+                                                {isUploadingImage ? "Resizing & Optimizing Image..." : "Upload Profile Photo"}
+                                            </span>
+                                            <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                                                Auto-Resize & Compress ✨
+                                            </span>
+                                        </div>
+                                        <p className="text-[11px] text-muted-foreground">
+                                            Click or drop any image (even 5MB+ photos). High-res files will automatically be resized and square-cropped to a lightweight avatar.
+                                        </p>
+                                    </div>
+
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        disabled={isUploadingImage}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            fileInputRef.current?.click();
+                                        }}
+                                        className="shrink-0 rounded-xl text-xs bg-blue-600 hover:bg-blue-700 text-white font-bold h-9 gap-1.5 shadow-xs cursor-pointer"
+                                    >
+                                        {isUploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                                        <span>Browse Photo</span>
+                                    </Button>
+                                </div>
+
+                                {/* Auto-Resize Success Badge */}
+                                {imageOptimizationMsg && (
+                                    <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-2">
+                                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                                        <span>{imageOptimizationMsg}</span>
+                                    </div>
+                                )}
+
+                                {/* 2. Developer Preset Avatars */}
+                                <div className="space-y-2 pt-2 border-t border-border/40">
+                                    <label className="text-[11px] font-bold text-muted-foreground flex items-center gap-1">
+                                        <ImageIcon className="w-3 h-3 text-purple-500" /> Or Choose a Preset Bot Avatar:
+                                    </label>
+                                    
+                                    <div className="flex flex-wrap items-center gap-2.5">
+                                        {PRESET_AVATARS.map((avatarUrl, idx) => (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => {
+                                                    setForm((prev) => ({ ...prev, avatar: avatarUrl }));
+                                                    setImageOptimizationMsg(null);
+                                                }}
+                                                className={`w-11 h-11 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer p-0.5 bg-muted/40 ${
+                                                    form.avatar === avatarUrl
+                                                        ? "border-blue-600 scale-110 shadow-md shadow-blue-500/20"
+                                                        : "border-border/60 hover:border-blue-400 hover:scale-105"
+                                                }`}
+                                                title={`Preset Avatar #${idx + 1}`}
+                                            >
+                                                <img src={avatarUrl} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover rounded-xl" />
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* 3. Custom Image URL */}
+                                <div className="pt-2 border-t border-border/40">
                                     <label className="text-[11px] text-muted-foreground font-medium block mb-1">
-                                        Or paste a custom avatar Image URL:
+                                        Or paste a custom image URL:
                                     </label>
                                     <Input
                                         type="url"
                                         placeholder="https://example.com/avatar.png"
                                         value={form.avatar}
-                                        onChange={(e) => setForm((prev) => ({ ...prev, avatar: e.target.value }))}
-                                        className="text-xs rounded-xl bg-muted/30"
+                                        onChange={(e) => {
+                                            setForm((prev) => ({ ...prev, avatar: e.target.value }));
+                                            setImageOptimizationMsg(null);
+                                        }}
+                                        className="text-xs rounded-xl bg-muted/30 font-mono"
                                     />
                                 </div>
                             </div>
