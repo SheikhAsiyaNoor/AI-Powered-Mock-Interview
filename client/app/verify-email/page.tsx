@@ -82,9 +82,9 @@ function VerifyEmailForm() {
                     Your email address has been successfully verified. You now have full access to peer challenges and interview rooms.
                 </p>
                 <div className="pt-2">
-                    <Link href="/dashboard">
-                        <Button className="w-full h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md">
-                            Go to Dashboard →
+                    <Link href="/login">
+                        <Button className="w-full h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md cursor-pointer">
+                            Sign In to Your Account →
                         </Button>
                     </Link>
                 </div>

@@ -84,12 +84,12 @@ const userSchema = new mongoose.Schema({
     customPermissions: [{ type: String }],
 
     // Enterprise Security: Email Verification
-    isEmailVerified: { type: Boolean, default: false },
-    emailVerificationToken: { type: String },
+    isEmailVerified: { type: Boolean, default: false, index: true },
+    emailVerificationToken: { type: String, sparse: true, index: true },
     emailVerificationExpires: { type: Date },
 
     // Enterprise Security: Password Reset
-    passwordResetToken: { type: String },
+    passwordResetToken: { type: String, sparse: true, index: true },
     passwordResetExpires: { type: Date },
 
     // Enterprise Security: Account Lockout

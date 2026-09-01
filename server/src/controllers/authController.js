@@ -5,6 +5,11 @@ const mongoose = require("mongoose");
 const { OAuth2Client } = require("google-auth-library");
 const User = require("../models/User");
 const UserGamification = require("../models/UserGamification");
+const {
+    sendVerificationEmail,
+    sendPasswordResetEmail,
+    sendPasswordChangedConfirmation
+} = require("../utils/emailService");
 
 const googleOAuthClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID || "");
 
@@ -139,28 +144,17 @@ const register = async (req, res) => {
             return res.status(400).json({ message: "An account with this email already exists!" });
         }
 
-        // Generate email verification token
+        // Generate email verification token (32 bytes random hex)
         const verificationToken = crypto.randomBytes(32).toString("hex");
+        const hashedVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
         const verificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         // Public registration always assigns standard candidate (student) role
         const userRole = "student";
 
-        // Setup first session
-        const sessionId = `sess_${crypto.randomBytes(16).toString("hex")}`;
         const userAgent = req.headers["user-agent"] || "Browser";
         const ip = req.ip || req.connection.remoteAddress || "127.0.0.1";
         const device = parseUserAgent(userAgent);
-
-        const initialSession = {
-            sessionId,
-            ip,
-            userAgent,
-            device,
-            location: "Local / Verified",
-            createdAt: new Date(),
-            lastActive: new Date()
-        };
 
         const initialLoginHistory = {
             timestamp: new Date(),
@@ -176,10 +170,10 @@ const register = async (req, res) => {
             email: normalizedEmail,
             password,
             role: userRole,
-            isEmailVerified: true, // auto-verified for frictionless dev experience, but token generated
-            emailVerificationToken: verificationToken,
+            isEmailVerified: false, // Must verify email via link before authenticating
+            emailVerificationToken: hashedVerificationToken,
             emailVerificationExpires: verificationExpires,
-            activeSessions: [initialSession],
+            activeSessions: [],
             loginHistory: [initialLoginHistory],
             securityAlerts: []
         });
@@ -223,20 +217,24 @@ const register = async (req, res) => {
             { upsert: true, new: true }
         );
 
-        const token = signToken(user._id.toString(), user.role, sessionId);
+        // Dispatch account verification email
+        await sendVerificationEmail({
+            to: user.email,
+            name: user.name,
+            token: verificationToken
+        });
 
         res.status(201).json({
-            message: "User registered successfully!",
+            message: "Registration successful! A verification link has been sent to your email address. Please verify your email before logging in.",
             user: {
                 id: user._id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                isEmailVerified: user.isEmailVerified
+                isEmailVerified: false
             },
-            token,
-            sessionId,
-            verificationTokenPreview: verificationToken
+            isEmailVerified: false,
+            verificationTokenPreview: verificationToken // Available for dev/testing environments
         });
     } catch (err) {
         console.error("Registration error:", err);
@@ -245,7 +243,7 @@ const register = async (req, res) => {
 };
 
 // ==========================================
-// 2. LOGIN (With Lockout & Session Tracking)
+// 2. LOGIN (With Lockout, Email Verification & Session Tracking)
 // ==========================================
 const login = async (req, res) => {
     try {
@@ -340,6 +338,15 @@ const login = async (req, res) => {
             });
         }
 
+        // Successful password match -> Check if email is verified
+        if (!user.isEmailVerified) {
+            return res.status(403).json({
+                message: "Please verify your email address to log in. We sent a verification link to your registered email.",
+                isEmailVerified: false,
+                email: user.email
+            });
+        }
+
         // Successful password verification
         user.failedLoginAttempts = 0;
         user.lockUntil = null;
@@ -416,12 +423,19 @@ const login = async (req, res) => {
 const verifyEmail = async (req, res) => {
     try {
         const { token } = req.body;
-        if (!token) {
+        if (!token || typeof token !== "string") {
             return res.status(400).json({ message: "Verification token is required!" });
         }
 
+        const cleanToken = token.trim();
+        const hashedToken = crypto.createHash("sha256").update(cleanToken).digest("hex");
+
+        // Match either hashed token or raw token (for backwards compatibility)
         const user = await User.findOne({
-            emailVerificationToken: token,
+            $or: [
+                { emailVerificationToken: hashedToken },
+                { emailVerificationToken: cleanToken }
+            ],
             emailVerificationExpires: { $gt: Date.now() }
         });
 
@@ -434,7 +448,10 @@ const verifyEmail = async (req, res) => {
         user.emailVerificationExpires = undefined;
         await user.save();
 
-        res.status(200).json({ message: "Email verified successfully! You can now access all verified features." });
+        res.status(200).json({
+            message: "Email verified successfully! You can now sign in to your account.",
+            isEmailVerified: true
+        });
     } catch (err) {
         console.error("Verify email error:", err);
         res.status(500).json({ message: "Server error during email verification" });
@@ -454,16 +471,24 @@ const resendVerification = async (req, res) => {
         }
 
         if (user.isEmailVerified) {
-            return res.status(400).json({ message: "Email is already verified." });
+            return res.status(400).json({ message: "Email is already verified. You can log in directly." });
         }
 
         const verificationToken = crypto.randomBytes(32).toString("hex");
-        user.emailVerificationToken = verificationToken;
+        const hashedVerificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+
+        user.emailVerificationToken = hashedVerificationToken;
         user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await user.save();
 
+        await sendVerificationEmail({
+            to: user.email,
+            name: user.name,
+            token: verificationToken
+        });
+
         res.status(200).json({
-            message: "Verification email re-sent successfully!",
+            message: "A new verification email has been sent. Please check your inbox.",
             verificationTokenPreview: verificationToken
         });
     } catch (err) {
@@ -486,7 +511,7 @@ const forgotPassword = async (req, res) => {
         if (!user) {
             // Return success message anyway to prevent user enumeration
             return res.status(200).json({
-                message: "If an account with that email exists, a password reset token has been generated."
+                message: "If an account with that email exists, a password reset link has been sent to your email."
             });
         }
 
@@ -497,8 +522,15 @@ const forgotPassword = async (req, res) => {
 
         await user.save();
 
+        // Dispatch password reset email
+        await sendPasswordResetEmail({
+            to: user.email,
+            name: user.name,
+            token: resetToken
+        });
+
         res.status(200).json({
-            message: "Password reset token generated successfully. Valid for 15 minutes.",
+            message: "If an account with that email exists, a password reset link has been sent to your email.",
             resetTokenPreview: resetToken // Provided for test/development environments
         });
     } catch (err) {
@@ -514,9 +546,14 @@ const resetPassword = async (req, res) => {
             return res.status(400).json({ message: "Reset token and new password are required!" });
         }
 
-        const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+        const cleanToken = token.trim();
+        const hashedToken = crypto.createHash("sha256").update(cleanToken).digest("hex");
+
         const user = await User.findOne({
-            passwordResetToken: hashedToken,
+            $or: [
+                { passwordResetToken: hashedToken },
+                { passwordResetToken: cleanToken }
+            ],
             passwordResetExpires: { $gt: Date.now() }
         });
 
@@ -564,6 +601,12 @@ const resetPassword = async (req, res) => {
         });
 
         await user.save();
+
+        // Send confirmation email
+        await sendPasswordChangedConfirmation({
+            to: user.email,
+            name: user.name
+        });
 
         res.status(200).json({
             message: "Password reset successful! All previous active sessions have been invalidated. Please log in with your new password."

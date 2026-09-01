@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
-import { ShieldAlert, Lock, AlertCircle } from "lucide-react";
+import { ShieldAlert, Lock, AlertCircle, MailCheck, RefreshCw } from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import axiosInstance from "@/lib/axios";
 
 const LoginPage = () => {
     const router = useRouter();
@@ -24,6 +25,11 @@ const LoginPage = () => {
     const [lockoutCountdown, setLockoutCountdown] = useState<number | null>(null);
     const [remainingAttempts, setRemainingAttempts] = useState<number | null>(null);
 
+    const [isUnverified, setIsUnverified] = useState(false);
+    const [unverifiedEmail, setUnverifiedEmail] = useState("");
+    const [isResending, setIsResending] = useState(false);
+    const [resendNotice, setResendNotice] = useState("");
+
     useEffect(() => {
         let timer: any;
         if (lockoutCountdown && lockoutCountdown > 0) {
@@ -38,12 +44,34 @@ const LoginPage = () => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
         setError("");
+        setIsUnverified(false);
+        setResendNotice("");
+    };
+
+    const handleResend = async () => {
+        const targetEmail = unverifiedEmail || formData.email;
+        if (!targetEmail) return;
+
+        setIsResending(true);
+        setResendNotice("");
+        try {
+            const { data } = await axiosInstance.post("/api/auth/resend-verification", {
+                email: targetEmail
+            });
+            setResendNotice(data.message || "A new verification email has been sent! Please check your inbox.");
+        } catch (err: any) {
+            setError(err?.response?.data?.message || "Failed to resend verification link.");
+        } finally {
+            setIsResending(false);
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
         setError("");
+        setIsUnverified(false);
+        setResendNotice("");
         setRemainingAttempts(null);
 
         try {
@@ -61,7 +89,11 @@ const LoginPage = () => {
             const status = err.response?.status;
             const data = err.response?.data;
 
-            if (status === 423) {
+            if (status === 403 && data?.isEmailVerified === false) {
+                setIsUnverified(true);
+                setUnverifiedEmail(data?.email || formData.email);
+                setError(data?.message || "Please verify your email address before signing in.");
+            } else if (status === 423) {
                 // Account Locked
                 const mins = data?.remainingMinutes || 15;
                 setLockoutMinutes(mins);
@@ -180,8 +212,41 @@ const LoginPage = () => {
                             </div>
                         )}
 
+                        {/* Unverified Email Warning Banner */}
+                        {isUnverified && (
+                            <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs font-medium space-y-2">
+                                <div className="flex items-center gap-2 font-bold text-amber-900 dark:text-amber-100">
+                                    <MailCheck className="w-4 h-4 text-amber-600" />
+                                    Email Verification Required
+                                </div>
+                                <p>Please verify your email before logging in. We sent a verification link to <strong>{unverifiedEmail || formData.email}</strong>.</p>
+                                
+                                {resendNotice && (
+                                    <div className="p-2.5 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[11px] font-semibold">
+                                        ✓ {resendNotice}
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <button
+                                        type="button"
+                                        onClick={handleResend}
+                                        disabled={isResending}
+                                        className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <RefreshCw className={`w-3 h-3 ${isResending ? "animate-spin" : ""}`} />
+                                        {isResending ? "Sending..." : "Resend Verification Link"}
+                                    </button>
+                                    <span className="text-muted-foreground">•</span>
+                                    <Link href="/verify-email" className="text-xs font-semibold text-muted-foreground hover:underline">
+                                        Enter Code
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Standard Error Notice */}
-                        {error && lockoutCountdown === null && (
+                        {error && !isUnverified && lockoutCountdown === null && (
                             <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 text-xs font-medium">
                                 {error}
                             </div>
