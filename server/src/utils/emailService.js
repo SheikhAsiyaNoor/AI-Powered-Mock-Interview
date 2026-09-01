@@ -1,7 +1,7 @@
 const nodemailer = require("nodemailer");
 
 /**
- * Creates and returns a Nodemailer transporter configured for Gmail / SMTP.
+ * Creates and returns a Nodemailer transporter for local SMTP development fallback.
  */
 const createTransporter = () => {
   const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
@@ -13,7 +13,6 @@ const createTransporter = () => {
     return null;
   }
 
-  // Standard Gmail Service Configuration
   if (EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"))) {
     return nodemailer.createTransport({
       service: "gmail",
@@ -24,7 +23,6 @@ const createTransporter = () => {
     });
   }
 
-  // Custom SMTP Host Configuration
   if (EMAIL_HOST) {
     return nodemailer.createTransport({
       host: EMAIL_HOST,
@@ -57,14 +55,113 @@ const getSenderEmail = () => {
 };
 
 /**
- * Send Account Verification Email via Gmail
+ * Universal HTTPS REST API Dispatcher
+ * Sends emails over HTTPS (Port 443), completely bypassing Render's blocked SMTP ports (25, 465, 587).
+ * Supports:
+ * 1. Brevo REST API (BREVO_API_KEY) - 300 free emails/day
+ * 2. Resend REST API (RESEND_API_KEY) - 100 free emails/day
+ * 3. Nodemailer SMTP (Local Dev fallback)
+ */
+const deliverEmail = async ({ to, name, subject, htmlContent }) => {
+  const {
+    BREVO_API_KEY,
+    RESEND_API_KEY,
+    EMAIL_USER,
+    EMAIL_FROM
+  } = process.env;
+
+  const senderEmail = (EMAIL_USER || "").replace(/['"]/g, "").trim() || "asanstudy42@gmail.com";
+  const senderName = "AI Mock Interview";
+  const formattedSender = EMAIL_FROM ? EMAIL_FROM.replace(/['"]/g, "").trim() : `"${senderName}" <${senderEmail}>`;
+
+  // 1. Brevo REST API (HTTPS Port 443 - 300 Free Emails / Day)
+  if (BREVO_API_KEY) {
+    try {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": BREVO_API_KEY.trim(),
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to, name: name || "Candidate" }],
+          subject,
+          htmlContent
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || JSON.stringify(data));
+      }
+      console.log(`[EmailService] Verification email sent via Brevo REST API to ${to} (ID: ${data.messageId || "ok"})`);
+      return { success: true, messageId: data.messageId };
+    } catch (err) {
+      console.error(`[EmailService] Brevo REST API Error:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 2. Resend REST API (HTTPS Port 443)
+  if (RESEND_API_KEY) {
+    try {
+      const fromAddress = (EMAIL_FROM || "AI Mock Interview <onboarding@resend.dev>").replace(/['"]/g, "").trim();
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${RESEND_API_KEY.trim()}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          from: fromAddress,
+          to: [to],
+          subject,
+          html: htmlContent
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || JSON.stringify(data));
+      }
+      console.log(`[EmailService] Verification email sent via Resend REST API to ${to} (ID: ${data.id || "ok"})`);
+      return { success: true, messageId: data.id };
+    } catch (err) {
+      console.error(`[EmailService] Resend REST API Error:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  // 3. Fallback to Nodemailer SMTP (e.g. during local testing)
+  const transporter = createTransporter();
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: formattedSender,
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`[EmailService] Verification email sent via SMTP to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send email via SMTP to ${to}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  console.warn(`[EmailService] No email provider configured. Please set BREVO_API_KEY in environment variables.`);
+  return { success: false, reason: "No email provider configured" };
+};
+
+/**
+ * Send Account Verification Email
  */
 const sendVerificationEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const verificationUrl = `${clientUrl}/verify-email?token=${encodeURIComponent(token)}`;
-  const sender = getSenderEmail();
-  const transporter = createTransporter();
-
   const subject = "Verify your email address - AI Mock Interview";
   const htmlContent = `
 <!DOCTYPE html>
@@ -112,35 +209,16 @@ const sendVerificationEmail = async ({ to, name, token }) => {
 </html>
   `;
 
-  if (transporter) {
-    try {
-      const info = await transporter.sendMail({
-        from: sender,
-        to,
-        subject,
-        html: htmlContent
-      });
-      console.log(`[EmailService] Verification email sent via Gmail to ${to} (Message ID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId, previewUrl: verificationUrl };
-    } catch (err) {
-      console.error(`[EmailService] Failed to send email via Gmail to ${to}:`, err.message);
-      return { success: false, error: err.message };
-    }
-  }
-
-  console.warn(`[EmailService] Gmail credentials not configured. Skipped email delivery to ${to}`);
-  return { success: false, reason: "Gmail credentials not configured" };
+  const result = await deliverEmail({ to, name, subject, htmlContent });
+  return { ...result, previewUrl: verificationUrl };
 };
 
 /**
- * Send Password Reset Email via Gmail
+ * Send Password Reset Email
  */
 const sendPasswordResetEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
-  const sender = getSenderEmail();
-  const transporter = createTransporter();
-
   const subject = "Password Reset Request - AI Mock Interview";
   const htmlContent = `
 <!DOCTYPE html>
@@ -192,34 +270,15 @@ const sendPasswordResetEmail = async ({ to, name, token }) => {
 </html>
   `;
 
-  if (transporter) {
-    try {
-      const info = await transporter.sendMail({
-        from: sender,
-        to,
-        subject,
-        html: htmlContent
-      });
-      console.log(`[EmailService] Password reset email sent via Gmail to ${to} (Message ID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId, previewUrl: resetUrl };
-    } catch (err) {
-      console.error(`[EmailService] Failed to send password reset email via Gmail to ${to}:`, err.message);
-      return { success: false, error: err.message };
-    }
-  }
-
-  console.warn(`[EmailService] Gmail credentials not configured. Skipped password reset email delivery to ${to}`);
-  return { success: false, reason: "Gmail credentials not configured" };
+  const result = await deliverEmail({ to, name, subject, htmlContent });
+  return { ...result, previewUrl: resetUrl };
 };
 
 /**
  * Send Security Notice Email when Password has been changed
  */
 const sendPasswordChangedConfirmation = async ({ to, name }) => {
-  const sender = getSenderEmail();
-  const transporter = createTransporter();
   const subject = "Security Alert: Your password has been changed";
-
   const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -248,18 +307,7 @@ const sendPasswordChangedConfirmation = async ({ to, name }) => {
 </html>
   `;
 
-  if (transporter) {
-    try {
-      await transporter.sendMail({
-        from: sender,
-        to,
-        subject,
-        html: htmlContent
-      });
-    } catch (err) {
-      console.error(`[EmailService] Failed to send password changed notice via Gmail:`, err.message);
-    }
-  }
+  return deliverEmail({ to, name, subject, htmlContent });
 };
 
 module.exports = {
