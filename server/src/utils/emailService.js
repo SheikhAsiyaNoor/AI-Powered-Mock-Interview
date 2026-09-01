@@ -1,11 +1,7 @@
-const dns = require("dns");
-if (dns.setDefaultResultOrder) {
-  dns.setDefaultResultOrder("ipv4first");
-}
 const nodemailer = require("nodemailer");
 
 /**
- * Creates and returns a Nodemailer transporter based on environment configuration.
+ * Creates and returns a Nodemailer transporter configured for Gmail / SMTP.
  */
 const createTransporter = () => {
   const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
@@ -17,28 +13,31 @@ const createTransporter = () => {
     return null;
   }
 
-  const isGmail = EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"));
+  // Standard Gmail Service Configuration
+  if (EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"))) {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: cleanUser,
+        pass: cleanPass
+      }
+    });
+  }
 
-  const host = isGmail ? "smtp.gmail.com" : (EMAIL_HOST || "smtp.gmail.com");
-  const port = Number(EMAIL_PORT) || 587;
-  const secure = port === 465;
+  // Custom SMTP Host Configuration
+  if (EMAIL_HOST) {
+    return nodemailer.createTransport({
+      host: EMAIL_HOST,
+      port: Number(EMAIL_PORT) || 587,
+      secure: Number(EMAIL_PORT) === 465,
+      auth: {
+        user: cleanUser,
+        pass: cleanPass
+      }
+    });
+  }
 
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: {
-      user: cleanUser,
-      pass: cleanPass
-    },
-    family: 4,
-    tls: {
-      rejectUnauthorized: false
-    },
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
-  });
+  return null;
 };
 
 const getClientUrl = () => {
@@ -58,137 +57,14 @@ const getSenderEmail = () => {
 };
 
 /**
- * Universal Email Dispatcher
- * Automatically tries HTTPS API providers first (Brevo, Resend, SendGrid) to bypass
- * Render/cloud host SMTP port blocks, and falls back to Nodemailer SMTP.
- */
-const deliverEmail = async ({ to, name, subject, htmlContent }) => {
-  const {
-    BREVO_API_KEY,
-    RESEND_API_KEY,
-    SENDGRID_API_KEY,
-    EMAIL_USER,
-    EMAIL_FROM
-  } = process.env;
-
-  const senderEmail = (EMAIL_USER || "").replace(/['"]/g, "").trim() || "asanstudy42@gmail.com";
-  const senderName = "AI Mock Interview";
-  const formattedSender = EMAIL_FROM ? EMAIL_FROM.replace(/['"]/g, "").trim() : `"${senderName}" <${senderEmail}>`;
-
-  // 1. Brevo HTTPS API (Port 443 - 300 free emails/day, no SMTP block)
-  if (BREVO_API_KEY) {
-    try {
-      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": BREVO_API_KEY.trim(),
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          sender: { name: senderName, email: senderEmail },
-          to: [{ email: to, name: name || "Candidate" }],
-          subject,
-          htmlContent
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || JSON.stringify(data));
-      }
-      console.log(`[EmailService] Email sent via Brevo HTTP API to ${to} (Message ID: ${data.messageId || "ok"})`);
-      return { success: true, messageId: data.messageId };
-    } catch (err) {
-      console.error(`[EmailService] Brevo API Error:`, err.message);
-    }
-  }
-
-  // 2. Resend HTTPS API (Port 443 - 100 free emails/day)
-  if (RESEND_API_KEY) {
-    try {
-      const from = (EMAIL_FROM || "AI Mock Interview <onboarding@resend.dev>").replace(/['"]/g, "").trim();
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RESEND_API_KEY.trim()}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from,
-          to: [to],
-          subject,
-          html: htmlContent
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || JSON.stringify(data));
-      }
-      console.log(`[EmailService] Email sent via Resend HTTP API to ${to} (ID: ${data.id || "ok"})`);
-      return { success: true, messageId: data.id };
-    } catch (err) {
-      console.error(`[EmailService] Resend API Error:`, err.message);
-    }
-  }
-
-  // 3. SendGrid HTTPS API (Port 443)
-  if (SENDGRID_API_KEY) {
-    try {
-      const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${SENDGRID_API_KEY.trim()}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          personalizations: [{ to: [{ email: to, name: name || "Candidate" }] }],
-          from: { email: senderEmail, name: senderName },
-          subject,
-          content: [{ type: "text/html", value: htmlContent }]
-        })
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(errorText);
-      }
-      console.log(`[EmailService] Email sent via SendGrid HTTP API to ${to}`);
-      return { success: true };
-    } catch (err) {
-      console.error(`[EmailService] SendGrid API Error:`, err.message);
-    }
-  }
-
-  // 4. Nodemailer SMTP Fallback
-  const transporter = createTransporter();
-  if (transporter) {
-    try {
-      const info = await transporter.sendMail({
-        from: formattedSender,
-        to,
-        subject,
-        html: htmlContent
-      });
-      console.log(`[EmailService] Verification email sent to ${to} (Message ID: ${info.messageId})`);
-      return { success: true, messageId: info.messageId };
-    } catch (err) {
-      console.error(`[EmailService] Failed to send email via SMTP to ${to}:`, err.message);
-      return { success: false, error: err.message };
-    }
-  }
-
-  console.warn(`[EmailService] No email provider configured. Skipped email delivery to ${to}`);
-  return { success: false, reason: "No email provider configured" };
-};
-
-/**
- * Send Account Verification Email
+ * Send Account Verification Email via Gmail
  */
 const sendVerificationEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const verificationUrl = `${clientUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
+
   const subject = "Verify your email address - AI Mock Interview";
   const htmlContent = `
 <!DOCTYPE html>
@@ -236,16 +112,35 @@ const sendVerificationEmail = async ({ to, name, token }) => {
 </html>
   `;
 
-  const result = await deliverEmail({ to, name, subject, htmlContent });
-  return { ...result, previewUrl: verificationUrl };
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`[EmailService] Verification email sent via Gmail to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, previewUrl: verificationUrl };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send email via Gmail to ${to}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  console.warn(`[EmailService] Gmail credentials not configured. Skipped email delivery to ${to}`);
+  return { success: false, reason: "Gmail credentials not configured" };
 };
 
 /**
- * Send Password Reset Email
+ * Send Password Reset Email via Gmail
  */
 const sendPasswordResetEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
+
   const subject = "Password Reset Request - AI Mock Interview";
   const htmlContent = `
 <!DOCTYPE html>
@@ -297,15 +192,34 @@ const sendPasswordResetEmail = async ({ to, name, token }) => {
 </html>
   `;
 
-  const result = await deliverEmail({ to, name, subject, htmlContent });
-  return { ...result, previewUrl: resetUrl };
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`[EmailService] Password reset email sent via Gmail to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, previewUrl: resetUrl };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send password reset email via Gmail to ${to}:`, err.message);
+      return { success: false, error: err.message };
+    }
+  }
+
+  console.warn(`[EmailService] Gmail credentials not configured. Skipped password reset email delivery to ${to}`);
+  return { success: false, reason: "Gmail credentials not configured" };
 };
 
 /**
  * Send Security Notice Email when Password has been changed
  */
 const sendPasswordChangedConfirmation = async ({ to, name }) => {
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
   const subject = "Security Alert: Your password has been changed";
+
   const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -334,7 +248,18 @@ const sendPasswordChangedConfirmation = async ({ to, name }) => {
 </html>
   `;
 
-  return deliverEmail({ to, name, subject, htmlContent });
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+    } catch (err) {
+      console.error(`[EmailService] Failed to send password changed notice via Gmail:`, err.message);
+    }
+  }
 };
 
 module.exports = {
@@ -342,4 +267,3 @@ module.exports = {
   sendPasswordResetEmail,
   sendPasswordChangedConfirmation
 };
-
