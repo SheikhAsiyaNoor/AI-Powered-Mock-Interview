@@ -129,6 +129,12 @@ const register = async (req, res) => {
             return res.status(400).json({ message: "All fields are required!" });
         }
 
+        const cleanName = name.trim();
+        const nameRegex = /^[a-zA-Z\s.]+$/;
+        if (!nameRegex.test(cleanName)) {
+            return res.status(400).json({ message: "Full Name can only contain letters, spaces, and dots (.)." });
+        }
+
         const normalizedEmail = email.trim().toLowerCase();
         if (!isValidEmail(normalizedEmail)) {
             return res.status(400).json({ message: "Please provide a valid email address." });

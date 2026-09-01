@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
-import { Lock, MailCheck, CheckCircle2, RefreshCw, ArrowRight } from "lucide-react";
+import { Lock, MailCheck, CheckCircle2, RefreshCw, ArrowRight, Edit3 } from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import axiosInstance from "@/lib/axios";
 
@@ -55,6 +55,12 @@ const RegisterPage = () => {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
+        // Strictly allow only letters, spaces, and dots for Full Name
+        if (name === "name") {
+            if (!/^[a-zA-Z\s.]*$/.test(value)) {
+                return;
+            }
+        }
         setFormData((prev) => ({ ...prev, [name]: value }));
         setError("");
     };
@@ -66,6 +72,12 @@ const RegisterPage = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+
+        const cleanName = formData.name.trim();
+        if (!cleanName || !/^[a-zA-Z\s.]+$/.test(cleanName)) {
+            setError("Full Name can only contain letters, spaces, and dots (.).");
+            return;
+        }
 
         if (!isEmailValid) {
             setError("Please enter a valid email address.");
@@ -90,12 +102,12 @@ const RegisterPage = () => {
         setIsLoading(true);
 
         try {
-            const res = await register(formData.name, formData.email, formData.password);
+            const res = await register(formData.name.trim(), formData.email.trim(), formData.password);
             // If already verified (e.g. google sso) redirect to dashboard, else show verification screen
             if (res?.isEmailVerified) {
                 router.push("/dashboard");
             } else {
-                setRegisteredEmail(formData.email);
+                setRegisteredEmail(formData.email.trim());
                 setIsRegistered(true);
             }
         } catch (err: any) {
@@ -115,7 +127,7 @@ const RegisterPage = () => {
             const { data } = await axiosInstance.post("/api/auth/resend-verification", {
                 email: registeredEmail
             });
-            setResendStatus(data.message || "Verification email re-sent!");
+            setResendStatus(data.message || "Verification email re-sent! Please check your inbox.");
         } catch (err: any) {
             setError(err.response?.data?.message || "Failed to resend verification email.");
         } finally {
@@ -143,11 +155,24 @@ const RegisterPage = () => {
                                 Verify Your Email
                             </CardTitle>
                             <CardDescription className="text-sm font-medium text-muted-foreground mt-1">
-                                We have sent a verification link to:
+                                We sent a verification link to:
                             </CardDescription>
-                            <p className="font-semibold text-foreground text-sm mt-1 bg-muted/60 py-1.5 px-3 rounded-xl inline-block">
-                                {registeredEmail}
-                            </p>
+                            <div className="flex items-center justify-center gap-2 mt-1">
+                                <p className="font-semibold text-foreground text-sm bg-muted/60 py-1.5 px-3 rounded-xl inline-block">
+                                    {registeredEmail}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRegistered(false);
+                                        setError("");
+                                    }}
+                                    className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1 cursor-pointer bg-blue-50 dark:bg-blue-950/60 py-1.5 px-2.5 rounded-lg border border-blue-200 dark:border-blue-800"
+                                    title="Fix typo or change email"
+                                >
+                                    <Edit3 className="w-3.5 h-3.5" /> Edit Email
+                                </button>
+                            </div>
                         </CardHeader>
 
                         <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 text-left space-y-2">
@@ -156,9 +181,9 @@ const RegisterPage = () => {
                                 What to do next:
                             </p>
                             <ol className="list-decimal list-inside space-y-1 text-muted-foreground dark:text-slate-300">
-                                <li>Open your email inbox and click the verification link.</li>
-                                <li>The link will confirm your identity and activate your account.</li>
-                                <li>Once verified, log in to start practicing interviews!</li>
+                                <li>Check your email inbox (and spam/promotions folder).</li>
+                                <li>Click the verification link to confirm your account.</li>
+                                <li>Sign in to begin your mock interviews and arena challenges!</li>
                             </ol>
                         </div>
 
@@ -186,11 +211,24 @@ const RegisterPage = () => {
                                 variant="outline"
                                 onClick={handleResendVerification}
                                 disabled={isResending}
-                                className="w-full h-10 rounded-full text-xs font-semibold"
+                                className="w-full h-10 rounded-full text-xs font-semibold cursor-pointer"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${isResending ? "animate-spin" : ""}`} />
-                                {isResending ? "Resending Email..." : "Resend Verification Email"}
+                                {isResending ? "Sending..." : "Resend Verification Email"}
                             </Button>
+
+                            <div className="pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setIsRegistered(false);
+                                        setError("");
+                                    }}
+                                    className="text-xs text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 font-semibold cursor-pointer underline underline-offset-2"
+                                >
+                                    Wrong email? Click to edit your information
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ) : (

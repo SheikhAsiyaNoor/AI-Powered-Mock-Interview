@@ -7,25 +7,52 @@ const nodemailer = require("nodemailer");
 const createTransporter = () => {
     const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
 
-    if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
+    const cleanPass = (EMAIL_PASS || "").replace(/\s+/g, "").trim();
+    const cleanUser = (EMAIL_USER || "").trim();
+
+    if (!cleanUser || !cleanPass) {
+        return null;
+    }
+
+    // Auto-detect Gmail configuration
+    if (EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"))) {
         return nodemailer.createTransport({
-            host: EMAIL_HOST,
-            port: Number(EMAIL_PORT) || 587,
-            secure: Number(EMAIL_PORT) === 465, // true for 465, false for other ports
+            service: "gmail",
             auth: {
-                user: EMAIL_USER,
-                pass: EMAIL_PASS
-            }
+                user: cleanUser,
+                pass: cleanPass
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
         });
     }
 
-    if (EMAIL_SERVICE && EMAIL_USER && EMAIL_PASS) {
+    if (EMAIL_HOST) {
+        return nodemailer.createTransport({
+            host: EMAIL_HOST,
+            port: Number(EMAIL_PORT) || 587,
+            secure: Number(EMAIL_PORT) === 465,
+            auth: {
+                user: cleanUser,
+                pass: cleanPass
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
+        });
+    }
+
+    if (EMAIL_SERVICE) {
         return nodemailer.createTransport({
             service: EMAIL_SERVICE,
             auth: {
-                user: EMAIL_USER,
-                pass: EMAIL_PASS
-            }
+                user: cleanUser,
+                pass: cleanPass
+            },
+            connectionTimeout: 10000,
+            greetingTimeout: 10000,
+            socketTimeout: 15000
         });
     }
 
@@ -37,7 +64,15 @@ const getClientUrl = () => {
 };
 
 const getSenderEmail = () => {
-    return process.env.EMAIL_FROM || '"AI Mock Interview Platform" <noreply@aimockinterview.com>';
+    const emailUser = (process.env.EMAIL_USER || "").trim();
+    if (process.env.EMAIL_FROM) {
+        // If EMAIL_FROM is customized and valid
+        return process.env.EMAIL_FROM;
+    }
+    if (emailUser) {
+        return `"AI Mock Interview" <${emailUser}>`;
+    }
+    return '"AI Mock Interview Platform" <noreply@aimockinterview.com>';
 };
 
 /**
