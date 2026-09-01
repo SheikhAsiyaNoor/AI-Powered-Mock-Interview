@@ -1,7 +1,98 @@
 const nodemailer = require("nodemailer");
 
 /**
- * Creates and returns a Nodemailer transporter for local SMTP development fallback.
+ * Encodes email into RFC 2822 format and converts to base64url string for Gmail REST API
+ */
+const createGmailRawMessage = ({ to, from, subject, htmlContent }) => {
+  const emailLines = [
+    `From: ${from}`,
+    `To: ${to}`,
+    `Subject: =?utf-8?B?${Buffer.from(subject).toString("base64")}?=`,
+    "MIME-Version: 1.0",
+    "Content-Type: text/html; charset=utf-8",
+    "Content-Transfer-Encoding: base64",
+    "",
+    Buffer.from(htmlContent).toString("base64")
+  ];
+
+  return Buffer.from(emailLines.join("\r\n"))
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+};
+
+/**
+ * Gets a fresh access token from Google OAuth2 using the refresh token
+ */
+const getGoogleAccessToken = async (clientId, clientSecret, refreshToken) => {
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: new URLSearchParams({
+      client_id: clientId.trim(),
+      client_secret: clientSecret.trim(),
+      refresh_token: refreshToken.trim(),
+      grant_type: "refresh_token"
+    })
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error_description || data.error || "Failed to refresh Google OAuth2 access token");
+  }
+  return data.access_token;
+};
+
+/**
+ * Sends an email using the Official Google Gmail REST API over HTTPS (Port 443)
+ * Endpoint: https://gmail.googleapis.com/gmail/v1/users/me/messages/send
+ */
+const sendViaGmailRestApi = async ({ to, subject, htmlContent }) => {
+  const clientId = process.env.GMAIL_CLIENT_ID || process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GMAIL_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GMAIL_REFRESH_TOKEN || process.env.GOOGLE_REFRESH_TOKEN;
+  const senderEmail = (process.env.EMAIL_USER || "").replace(/['"]/g, "").trim() || "me";
+
+  if (!clientId || !clientSecret || !refreshToken) {
+    return null; // Fall through to SMTP transporter
+  }
+
+  try {
+    const accessToken = await getGoogleAccessToken(clientId, clientSecret, refreshToken);
+    const rawMessage = createGmailRawMessage({
+      to,
+      from: senderEmail,
+      subject,
+      htmlContent
+    });
+
+    const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ raw: rawMessage })
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error?.message || JSON.stringify(data));
+    }
+
+    console.log(`[EmailService] Email sent via Google Gmail REST API to ${to} (Message ID: ${data.id})`);
+    return { success: true, messageId: data.id };
+  } catch (err) {
+    console.error(`[EmailService] Google Gmail REST API error:`, err.message);
+    return { success: false, error: err.message };
+  }
+};
+
+/**
+ * Creates and returns a Nodemailer transporter for SMTP fallback
  */
 const createTransporter = () => {
   const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
@@ -55,86 +146,19 @@ const getSenderEmail = () => {
 };
 
 /**
- * Universal HTTPS REST API Dispatcher
- * Sends emails over HTTPS (Port 443), completely bypassing Render's blocked SMTP ports (25, 465, 587).
- * Supports:
- * 1. Brevo REST API (BREVO_API_KEY) - 300 free emails/day
- * 2. Resend REST API (RESEND_API_KEY) - 100 free emails/day
- * 3. Nodemailer SMTP (Local Dev fallback)
+ * Universal Email Dispatcher:
+ * 1. Tries Google Gmail REST API (Port 443 - works on Render Free Tier without SMTP block)
+ * 2. Falls back to Nodemailer SMTP
  */
 const deliverEmail = async ({ to, name, subject, htmlContent }) => {
-  const {
-    BREVO_API_KEY,
-    RESEND_API_KEY,
-    EMAIL_USER,
-    EMAIL_FROM
-  } = process.env;
-
-  const senderEmail = (EMAIL_USER || "").replace(/['"]/g, "").trim() || "asanstudy42@gmail.com";
-  const senderName = "AI Mock Interview";
-  const formattedSender = EMAIL_FROM ? EMAIL_FROM.replace(/['"]/g, "").trim() : `"${senderName}" <${senderEmail}>`;
-
-  // 1. Brevo REST API (HTTPS Port 443 - 300 Free Emails / Day)
-  if (BREVO_API_KEY) {
-    try {
-      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "api-key": BREVO_API_KEY.trim(),
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          sender: { name: senderName, email: senderEmail },
-          to: [{ email: to, name: name || "Candidate" }],
-          subject,
-          htmlContent
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || JSON.stringify(data));
-      }
-      console.log(`[EmailService] Verification email sent via Brevo REST API to ${to} (ID: ${data.messageId || "ok"})`);
-      return { success: true, messageId: data.messageId };
-    } catch (err) {
-      console.error(`[EmailService] Brevo REST API Error:`, err.message);
-      return { success: false, error: err.message };
-    }
+  // 1. Try Google Gmail REST API over HTTPS (Port 443)
+  const gmailRestResult = await sendViaGmailRestApi({ to, subject, htmlContent });
+  if (gmailRestResult && gmailRestResult.success) {
+    return gmailRestResult;
   }
 
-  // 2. Resend REST API (HTTPS Port 443)
-  if (RESEND_API_KEY) {
-    try {
-      const fromAddress = (EMAIL_FROM || "AI Mock Interview <onboarding@resend.dev>").replace(/['"]/g, "").trim();
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${RESEND_API_KEY.trim()}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          from: fromAddress,
-          to: [to],
-          subject,
-          html: htmlContent
-        })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || JSON.stringify(data));
-      }
-      console.log(`[EmailService] Verification email sent via Resend REST API to ${to} (ID: ${data.id || "ok"})`);
-      return { success: true, messageId: data.id };
-    } catch (err) {
-      console.error(`[EmailService] Resend REST API Error:`, err.message);
-      return { success: false, error: err.message };
-    }
-  }
-
-  // 3. Fallback to Nodemailer SMTP (e.g. during local testing)
+  // 2. Fallback to Nodemailer SMTP
+  const formattedSender = getSenderEmail();
   const transporter = createTransporter();
   if (transporter) {
     try {
@@ -144,7 +168,7 @@ const deliverEmail = async ({ to, name, subject, htmlContent }) => {
         subject,
         html: htmlContent
       });
-      console.log(`[EmailService] Verification email sent via SMTP to ${to} (Message ID: ${info.messageId})`);
+      console.log(`[EmailService] Email sent via SMTP to ${to} (Message ID: ${info.messageId})`);
       return { success: true, messageId: info.messageId };
     } catch (err) {
       console.error(`[EmailService] Failed to send email via SMTP to ${to}:`, err.message);
@@ -152,8 +176,8 @@ const deliverEmail = async ({ to, name, subject, htmlContent }) => {
     }
   }
 
-  console.warn(`[EmailService] No email provider configured. Please set BREVO_API_KEY in environment variables.`);
-  return { success: false, reason: "No email provider configured" };
+  console.warn(`[EmailService] No Gmail REST API or SMTP credentials configured. Skipped email delivery to ${to}`);
+  return { success: false, reason: "No credentials configured" };
 };
 
 /**
