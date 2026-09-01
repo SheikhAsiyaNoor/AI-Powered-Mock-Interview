@@ -240,7 +240,6 @@ const register = async (req, res) => {
                 isEmailVerified: false
             },
             isEmailVerified: false,
-            verificationTokenPreview: verificationToken // Available for dev/testing environments
         });
     } catch (err) {
         console.error("Registration error:", err);
@@ -272,7 +271,7 @@ const login = async (req, res) => {
         // Check if account is locked
         if (user.isLocked()) {
             const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
-            
+
             // Log locked attempt
             user.loginHistory.unshift({
                 timestamp: new Date(),
@@ -305,7 +304,7 @@ const login = async (req, res) => {
             if (user.failedLoginAttempts >= 5) {
                 user.lockUntil = new Date(Date.now() + 15 * 60 * 1000); // 15-minute lock
                 alertMessage = "Account locked for 15 minutes due to 5 consecutive failed login attempts.";
-                
+
                 user.securityAlerts.unshift({
                     alertId: `alert_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
                     type: "ACCOUNT_LOCKED",
@@ -359,8 +358,8 @@ const login = async (req, res) => {
 
         // Check for suspicious login: unknown device or IP
         const hasUsedDevice = user.activeSessions.some(s => s.device === device) ||
-                             user.loginHistory.some(h => h.device === device && h.status === "SUCCESS");
-        
+            user.loginHistory.some(h => h.device === device && h.status === "SUCCESS");
+
         if (!hasUsedDevice && user.loginHistory.length > 0) {
             user.securityAlerts.unshift({
                 alertId: `alert_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`,
@@ -1190,7 +1189,7 @@ const getPublicUserProfile = async (req, res) => {
                 if (decoded && decoded.userId) {
                     authenticatedUser = { _id: decoded.userId, role: decoded.role };
                 }
-            } catch (ignore) {}
+            } catch (ignore) { }
         }
 
         if (authenticatedUser && authenticatedUser._id && authenticatedUser._id.toString() === user._id.toString()) {

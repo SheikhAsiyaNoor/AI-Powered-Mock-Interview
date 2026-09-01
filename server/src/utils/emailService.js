@@ -1,3 +1,7 @@
+const dns = require("dns");
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
 const nodemailer = require("nodemailer");
 
 /**
@@ -5,87 +9,66 @@ const nodemailer = require("nodemailer");
  * If credentials are not present, it returns null and falls back to terminal simulation.
  */
 const createTransporter = () => {
-    const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
+  const { EMAIL_HOST, EMAIL_PORT, EMAIL_USER, EMAIL_PASS, EMAIL_SERVICE } = process.env;
 
-    const cleanPass = (EMAIL_PASS || "").replace(/\s+/g, "").trim();
-    const cleanUser = (EMAIL_USER || "").trim();
+  const cleanPass = (EMAIL_PASS || "").replace(/['"\s]/g, "").trim();
+  const cleanUser = (EMAIL_USER || "").replace(/['"]/g, "").trim();
 
-    if (!cleanUser || !cleanPass) {
-        return null;
-    }
-
-    // Auto-detect Gmail configuration
-    if (EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"))) {
-        return nodemailer.createTransport({
-            service: "gmail",
-            auth: {
-                user: cleanUser,
-                pass: cleanPass
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000
-        });
-    }
-
-    if (EMAIL_HOST) {
-        return nodemailer.createTransport({
-            host: EMAIL_HOST,
-            port: Number(EMAIL_PORT) || 587,
-            secure: Number(EMAIL_PORT) === 465,
-            auth: {
-                user: cleanUser,
-                pass: cleanPass
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000
-        });
-    }
-
-    if (EMAIL_SERVICE) {
-        return nodemailer.createTransport({
-            service: EMAIL_SERVICE,
-            auth: {
-                user: cleanUser,
-                pass: cleanPass
-            },
-            connectionTimeout: 10000,
-            greetingTimeout: 10000,
-            socketTimeout: 15000
-        });
-    }
-
+  if (!cleanUser || !cleanPass) {
     return null;
+  }
+
+  const isGmail = EMAIL_SERVICE === "gmail" || cleanUser.endsWith("@gmail.com") || (EMAIL_HOST && EMAIL_HOST.includes("gmail.com"));
+
+  const host = isGmail ? "smtp.gmail.com" : (EMAIL_HOST || "smtp.gmail.com");
+  const port = Number(EMAIL_PORT) || 587;
+  const secure = port === 465;
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure, // false for 587 (STARTTLS), true for 465
+    auth: {
+      user: cleanUser,
+      pass: cleanPass
+    },
+    family: 4, // Explicitly force IPv4 to prevent ENETUNREACH on cloud environments like Render
+    tls: {
+      rejectUnauthorized: false
+    },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000
+  });
 };
 
 const getClientUrl = () => {
-    return process.env.CLIENT_URL || "http://localhost:3000";
+  const url = (process.env.CLIENT_URL || "http://localhost:3000").trim().replace(/['"]/g, "").replace(/\/+$/, "");
+  return url;
 };
 
 const getSenderEmail = () => {
-    const emailUser = (process.env.EMAIL_USER || "").trim();
-    if (process.env.EMAIL_FROM) {
-        // If EMAIL_FROM is customized and valid
-        return process.env.EMAIL_FROM;
-    }
-    if (emailUser) {
-        return `"AI Mock Interview" <${emailUser}>`;
-    }
-    return '"AI Mock Interview Platform" <noreply@aimockinterview.com>';
+  const emailUser = (process.env.EMAIL_USER || "").replace(/['"]/g, "").trim();
+  if (process.env.EMAIL_FROM) {
+    return process.env.EMAIL_FROM.replace(/['"]/g, "").trim();
+  }
+  if (emailUser) {
+    return `"AI Mock Interview" <${emailUser}>`;
+  }
+  return '"AI Mock Interview Platform" <noreply@aimockinterview.com>';
 };
 
 /**
  * Send Account Verification Email
  */
 const sendVerificationEmail = async ({ to, name, token }) => {
-    const clientUrl = getClientUrl();
-    const verificationUrl = `${clientUrl}/verify-email?token=${encodeURIComponent(token)}`;
-    const sender = getSenderEmail();
-    const transporter = createTransporter();
+  const clientUrl = getClientUrl();
+  const verificationUrl = `${clientUrl}/verify-email?token=${encodeURIComponent(token)}`;
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
 
-    const subject = "Verify your email address - AI Mock Interview";
-    const htmlContent = `
+  const subject = "Verify your email address - AI Mock Interview";
+  const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -131,44 +114,37 @@ const sendVerificationEmail = async ({ to, name, token }) => {
 </html>
     `;
 
-    if (transporter) {
-        try {
-            const info = await transporter.sendMail({
-                from: sender,
-                to,
-                subject,
-                html: htmlContent
-            });
-            console.log(`[EmailService] Verification email sent to ${to} (Message ID: ${info.messageId})`);
-            return { success: true, messageId: info.messageId, previewUrl: verificationUrl };
-        } catch (err) {
-            console.error(`[EmailService] Failed to send email via SMTP:`, err.message);
-            // Fall through to dev console log
-        }
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`[EmailService] Verification email sent to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, previewUrl: verificationUrl };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send email via SMTP to ${to}:`, err.message);
+      return { success: false, error: err.message };
     }
+  }
 
-    // Development fallback banner
-    console.log("\n=======================================================");
-    console.log(" 📧 [DEV EMAIL SIMULATION] ACCOUNT VERIFICATION EMAIL");
-    console.log(` To: ${to} (${name})`);
-    console.log(` Subject: ${subject}`);
-    console.log(` Verification Link: \x1b[36m${verificationUrl}\x1b[0m`);
-    console.log("=======================================================\n");
-
-    return { success: true, previewUrl: verificationUrl, devMode: true };
+  console.warn(`[EmailService] SMTP credentials not configured. Skipped email delivery to ${to}`);
+  return { success: false, reason: "SMTP not configured" };
 };
 
 /**
  * Send Password Reset Email
  */
 const sendPasswordResetEmail = async ({ to, name, token }) => {
-    const clientUrl = getClientUrl();
-    const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
-    const sender = getSenderEmail();
-    const transporter = createTransporter();
+  const clientUrl = getClientUrl();
+  const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
 
-    const subject = "Password Reset Request - AI Mock Interview";
-    const htmlContent = `
+  const subject = "Password Reset Request - AI Mock Interview";
+  const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -218,41 +194,35 @@ const sendPasswordResetEmail = async ({ to, name, token }) => {
 </html>
     `;
 
-    if (transporter) {
-        try {
-            const info = await transporter.sendMail({
-                from: sender,
-                to,
-                subject,
-                html: htmlContent
-            });
-            console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
-            return { success: true, messageId: info.messageId, previewUrl: resetUrl };
-        } catch (err) {
-            console.error(`[EmailService] Failed to send password reset email via SMTP:`, err.message);
-        }
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+      console.log(`[EmailService] Password reset email sent to ${to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId, previewUrl: resetUrl };
+    } catch (err) {
+      console.error(`[EmailService] Failed to send password reset email via SMTP to ${to}:`, err.message);
+      return { success: false, error: err.message };
     }
+  }
 
-    // Development fallback banner
-    console.log("\n=======================================================");
-    console.log(" 🔑 [DEV EMAIL SIMULATION] PASSWORD RESET EMAIL");
-    console.log(` To: ${to} (${name})`);
-    console.log(` Subject: ${subject}`);
-    console.log(` Reset Link: \x1b[33m${resetUrl}\x1b[0m`);
-    console.log("=======================================================\n");
-
-    return { success: true, previewUrl: resetUrl, devMode: true };
+  console.warn(`[EmailService] SMTP credentials not configured. Skipped password reset email delivery to ${to}`);
+  return { success: false, reason: "SMTP not configured" };
 };
 
 /**
  * Send Security Notice Email when Password has been changed
  */
 const sendPasswordChangedConfirmation = async ({ to, name }) => {
-    const sender = getSenderEmail();
-    const transporter = createTransporter();
-    const subject = "Security Alert: Your password has been changed";
+  const sender = getSenderEmail();
+  const transporter = createTransporter();
+  const subject = "Security Alert: Your password has been changed";
 
-    const htmlContent = `
+  const htmlContent = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -280,22 +250,22 @@ const sendPasswordChangedConfirmation = async ({ to, name }) => {
 </html>
     `;
 
-    if (transporter) {
-        try {
-            await transporter.sendMail({
-                from: sender,
-                to,
-                subject,
-                html: htmlContent
-            });
-        } catch (err) {
-            console.error(`[EmailService] Failed to send password changed notice:`, err.message);
-        }
+  if (transporter) {
+    try {
+      await transporter.sendMail({
+        from: sender,
+        to,
+        subject,
+        html: htmlContent
+      });
+    } catch (err) {
+      console.error(`[EmailService] Failed to send password changed notice:`, err.message);
     }
+  }
 };
 
 module.exports = {
-    sendVerificationEmail,
-    sendPasswordResetEmail,
-    sendPasswordChangedConfirmation
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendPasswordChangedConfirmation
 };
