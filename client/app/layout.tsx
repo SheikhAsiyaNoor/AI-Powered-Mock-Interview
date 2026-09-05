@@ -21,13 +21,12 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-powered-mock-interview-gules.vercel.app"),
   title: {
-    default: "MoKio | AI Mock Interview & Placement Readiness Engine",
-    template: "%s | MoKio",
+    default: "AI Mock Interview | Placement Readiness Engine",
+    template: "%s | AI Mock Interview",
   },
   description:
     "Master technical & behavioral interviews with AI-powered simulations, real-time speech feedback, resume analysis, and adaptive coding challenges.",
   keywords: [
-    "MoKio",
     "AI mock interview",
     "technical interview prep",
     "coding interview practice",
@@ -37,9 +36,9 @@ export const metadata: Metadata = {
     "interview simulation",
     "software engineering interview",
   ],
-  authors: [{ name: "MoKio Team" }],
-  creator: "MoKio",
-  publisher: "MoKio",
+  authors: [{ name: "AI Mock Interview Team" }],
+  creator: "AI Mock Interview",
+  publisher: "AI Mock Interview",
   robots: {
     index: true,
     follow: true,
@@ -55,14 +54,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://ai-powered-mock-interview-gules.vercel.app",
-    siteName: "MoKio - AI Mock Interview Platform",
-    title: "MoKio | AI Mock Interview & Placement Readiness Engine",
+    siteName: "AI Mock Interview Platform",
+    title: "AI Mock Interview | Placement Readiness Engine",
     description:
       "Practice tech interviews with real-time AI feedback, tailored question banks, resume evaluation, and peer challenge arena.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "MoKio | AI Mock Interview & Placement Readiness Engine",
+    title: "AI Mock Interview | Placement Readiness Engine",
     description:
       "Master technical & behavioral interviews with real-time AI feedback and personalized preparation plans.",
   },
@@ -86,7 +85,7 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    name: "MoKio - AI Mock Interview Platform",
+    name: "AI Mock Interview Platform",
     url: "https://ai-powered-mock-interview-gules.vercel.app",
     description:
       "AI-Powered Mock Interview Platform & Placement Readiness Engine for students and job seekers.",
