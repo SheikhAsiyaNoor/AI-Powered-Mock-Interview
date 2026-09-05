@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/context/Authcontext";
+import PlatformReviews from "@/components/PlatformReviews";
 
 export default function Home() {
     const { isLoggedIn } = useAuth();
@@ -87,6 +88,9 @@ export default function Home() {
                         </Card>
                     ))}
                 </div>
+
+                {/* Candidate Community Reviews & 5-Star Ratings */}
+                <PlatformReviews />
             </section>
 
             {/* How It Works Section */}

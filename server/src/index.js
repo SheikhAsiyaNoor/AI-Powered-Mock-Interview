@@ -16,6 +16,7 @@ const simulatorRoutes = require("./routes/simulator");
 const arenaRoutes = require("./routes/arena");
 const mentorRoutes = require("./routes/mentor");
 const adminRoutes = require("./routes/admin");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 connectDB();
 const app = express();
@@ -50,6 +51,9 @@ app.use("/api/simulator", simulatorRoutes);
 app.use("/api/arena", arenaRoutes);
 app.use("/api/mentor", mentorRoutes);
 app.use("/api/admin", adminRoutes);
+
+// Community Reviews & 5-Star Ratings
+app.use("/api/reviews", reviewRoutes);
 
 const PORT = process.env.PORT || 5000;
 
