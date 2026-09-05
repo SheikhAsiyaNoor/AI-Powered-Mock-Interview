@@ -163,7 +163,7 @@ export default function AdminControlCenter() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 mb-8 border-b border-border/40 gap-4">
                     <div>
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border/80 bg-muted/70 text-foreground/80 text-xs font-semibold uppercase tracking-wider mb-2">
                             <Shield className="w-3.5 h-3.5" />
                             Master Administration Console
                         </div>
@@ -582,7 +582,7 @@ export default function AdminControlCenter() {
 
                                 <Button
                                     type="submit"
-                                    className="w-full h-10 rounded-full bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md cursor-pointer"
+                                    className="w-full h-10 rounded-full btn-crystal text-white font-bold text-xs shadow-md cursor-pointer"
                                 >
                                     Save Platform Policy
                                 </Button>

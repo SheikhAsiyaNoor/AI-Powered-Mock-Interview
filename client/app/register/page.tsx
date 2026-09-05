@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { useAuth } from "@/context/Authcontext";
 import { Lock, MailCheck, CheckCircle2, RefreshCw, ArrowRight, Edit3 } from "lucide-react";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
+import BrandLogo from "@/components/BrandLogo";
 import axiosInstance from "@/lib/axios";
 
 const isValidEmail = (email: string) => {
@@ -136,14 +137,19 @@ const RegisterPage = () => {
     };
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center bg-gradient-to-b from-blue-100/80 via-blue-50/40 to-background px-4 py-12">
-            {/* Top AI Icon Badge */}
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-lg shadow-blue-500/30 mb-6">
-                <span>AI</span>
+        <div className="min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-4 py-12 relative overflow-hidden">
+            {/* Ambient Light Flare */}
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-full max-w-lg h-64 bg-gradient-to-b from-indigo-500/3 to-transparent blur-3xl pointer-events-none -z-10 rounded-full" />
+
+            {/* Top Brand Logo */}
+            <div className="mb-6">
+                <Link href="/">
+                    <BrandLogo size={44} showText={false} />
+                </Link>
             </div>
 
             {/* Register Card Component */}
-            <Card className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 dark:shadow-none border border-border/80 text-center">
+            <Card className="w-full max-w-md glass-card rounded-3xl p-6 sm:p-8 shadow-xl border-border/80 text-center">
                 {isRegistered ? (
                     <div className="space-y-5 text-center py-2">
                         <div className="mx-auto w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-950/80 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-2 shadow-lg shadow-blue-500/10">
@@ -366,7 +372,7 @@ const RegisterPage = () => {
                                 <Button
                                     type="submit"
                                     disabled={isLoading}
-                                    className="w-full h-11 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-md shadow-blue-500/25 transition-all mt-2 cursor-pointer"
+                                    className="w-full h-11 rounded-full btn-crystal text-white text-sm font-semibold shadow-md transition-all mt-2 cursor-pointer"
                                 >
                                     {isLoading ? "Creating Account..." : "Create Candidate Account"}
                                 </Button>
@@ -374,7 +380,7 @@ const RegisterPage = () => {
 
                             <div className="mt-6 text-center text-xs text-muted-foreground font-medium">
                                 Already have an account?{" "}
-                                <Link href="/login" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+                                <Link href="/login" className="text-foreground font-semibold hover:underline">
                                     Sign in
                                 </Link>
                             </div>

@@ -10,40 +10,43 @@ export default function Home() {
     const { isLoggedIn } = useAuth();
 
     return (
-        <div className="min-h-screen bg-background text-foreground space-y-16 pb-20">
+        <div className="min-h-screen bg-background text-foreground space-y-16 pb-20 relative overflow-hidden">
+            {/* Subtle Ambient Light */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-gradient-to-b from-indigo-500/3 to-transparent blur-3xl pointer-events-none -z-10" />
+
             {/* Hero Section */}
             <section className="pt-16 md:pt-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center space-y-6">
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20 text-xs font-bold tracking-wide">
-                    <span>🚀</span> IPERITUS — AI-POWERED MOCK INTERVIEW
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-muted/70 text-foreground/80 border border-border/80 text-xs font-medium tracking-wide backdrop-blur-md shadow-xs">
+                    <span>⚡</span> <span className="font-semibold text-foreground">IPERITUS</span> — Absolute pointers, zero blind spots
                 </div>
 
-                <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
+                <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
                     Master Your Tech Interviews with{" "}
-                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        Real-Time AI Feedback
+                    <span className="crystal-gradient-text">
+                        Real-Time AI Precision
                     </span>
                 </h1>
 
                 <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                    Practice role-specific interview questions, receive instant Groq AI evaluation, and analyze your resume to land your dream job faster.
+                    <strong className="text-foreground font-semibold">Absolute pointers, zero blind spots.</strong> Practice role-specific interview questions, receive instant Groq AI evaluation, and analyze your resume to land your dream job faster.
                 </p>
 
                 <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
                     {isLoggedIn ? (
                         <Link href="/dashboard">
-                            <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 shadow-lg shadow-blue-500/25 cursor-pointer">
+                            <Button size="lg" className="btn-crystal rounded-full font-bold px-8 h-12 shadow-md cursor-pointer">
                                 Go to Dashboard ⚡
                             </Button>
                         </Link>
                     ) : (
                         <>
                             <Link href="/register">
-                                <Button size="lg" className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 h-12 shadow-lg shadow-blue-500/25 cursor-pointer">
+                                <Button size="lg" className="btn-crystal rounded-full font-bold px-8 h-12 shadow-md cursor-pointer">
                                     Get Started Free 🚀
                                 </Button>
                             </Link>
                             <Link href="/login">
-                                <Button variant="outline" size="lg" className="rounded-full border-border font-semibold px-8 h-12 cursor-pointer">
+                                <Button variant="outline" size="lg" className="glass-card rounded-full font-semibold px-8 h-12 cursor-pointer transition-colors">
                                     Sign In
                                 </Button>
                             </Link>
@@ -79,13 +82,13 @@ export default function Home() {
                             desc: "Track score trends over time, monitor practice duration, and view past session transcripts.",
                         },
                     ].map((feature, i) => (
-                        <Card key={i} className="p-6 border border-border/60 rounded-3xl bg-card shadow-2xs hover:shadow-md transition-all">
-                            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center text-2xl mb-4 font-bold">
+                        <div key={i} className="glass-card glass-card-hover p-6 rounded-3xl transition-all">
+                            <div className="w-12 h-12 rounded-2xl bg-muted/80 text-foreground border border-border/70 flex items-center justify-center text-2xl mb-4 font-bold shadow-xs">
                                 {feature.icon}
                             </div>
                             <h3 className="text-base font-bold text-foreground mb-2">{feature.title}</h3>
                             <p className="text-xs text-muted-foreground leading-relaxed">{feature.desc}</p>
-                        </Card>
+                        </div>
                     ))}
                 </div>
 
@@ -120,16 +123,16 @@ export default function Home() {
                             desc: "Get a comprehensive score breakdown ring, technical accuracy ratings, and actionable improvements.",
                         },
                     ].map((step, i) => (
-                        <Card key={i} className="p-6 border border-border/60 rounded-3xl bg-card relative overflow-hidden">
-                            <span className="text-4xl font-black text-blue-600/10 absolute top-4 right-4">
+                        <div key={i} className="glass-card glass-card-hover p-6 rounded-3xl relative overflow-hidden">
+                            <span className="text-4xl font-black text-foreground/10 absolute top-4 right-4 select-none">
                                 {step.step}
                             </span>
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs mb-4">
+                            <div className="w-8 h-8 rounded-full bg-foreground text-background flex items-center justify-center font-bold text-xs mb-4 shadow-xs">
                                 {i + 1}
                             </div>
                             <h3 className="text-base font-bold text-foreground mb-2">{step.title}</h3>
                             <p className="text-xs text-muted-foreground leading-relaxed">{step.desc}</p>
-                        </Card>
+                        </div>
                     ))}
                 </div>
             </section>
@@ -154,29 +157,29 @@ export default function Home() {
                         { label: "Database Design", icon: "💾" },
                         { label: "General", icon: "🎯" },
                     ].map((d, i) => (
-                        <Card key={i} className="p-4 border border-border/60 rounded-2xl text-center space-y-2 hover:border-blue-600/50 transition-all">
+                        <div key={i} className="glass-card glass-card-hover p-4 rounded-2xl text-center space-y-2 transition-all cursor-pointer">
                             <span className="text-3xl block">{d.icon}</span>
                             <p className="text-xs font-bold text-foreground">{d.label}</p>
-                        </Card>
+                        </div>
                     ))}
                 </div>
             </section>
 
             {/* CTA Banner */}
             <section className="max-w-5xl mx-auto px-4 pt-10">
-                <Card className="p-8 sm:p-12 text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl space-y-4 shadow-xl">
-                    <h2 className="text-2xl sm:text-4xl font-extrabold">Ready to Ace Your Next Interview?</h2>
-                    <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto">
-                        Join thousands of developers using Iperitus to sharpen their answers and land job offers.
+                <div className="p-8 sm:p-12 text-center bg-slate-900 dark:bg-slate-900/90 text-white rounded-3xl space-y-4 shadow-xl relative overflow-hidden border border-slate-800 backdrop-blur-xl">
+                    <h2 className="text-2xl sm:text-4xl font-extrabold relative z-10">Ready to Ace Your Next Interview?</h2>
+                    <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto relative z-10">
+                        Join thousands of developers using Iperitus to sharpen their answers, eliminate blind spots, and land job offers.
                     </p>
-                    <div className="pt-2">
+                    <div className="pt-2 relative z-10">
                         <Link href="/register">
-                            <Button size="lg" className="rounded-full bg-white text-blue-600 hover:bg-slate-100 font-bold px-8 h-12 cursor-pointer shadow-md">
+                            <Button size="lg" className="rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold px-8 h-12 cursor-pointer shadow-lg transition-all">
                                 Create Your Free Account 🚀
                             </Button>
                         </Link>
                     </div>
-                </Card>
+                </div>
             </section>
         </div>
     );

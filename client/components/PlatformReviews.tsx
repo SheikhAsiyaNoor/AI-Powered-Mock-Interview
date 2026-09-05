@@ -310,7 +310,7 @@ export default function PlatformReviews() {
                 </div>
 
                 {/* Rating Stats Hero Card */}
-                <div className="mb-10 rounded-3xl border border-border/70 bg-gradient-to-b from-card/90 via-card to-card/60 p-6 sm:p-8 shadow-xs backdrop-blur-xs">
+                <div className="mb-10 rounded-3xl glass-card p-6 sm:p-8 shadow-lg">
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                         {/* Overall Score */}
                         <div className="lg:col-span-4 flex flex-col items-center justify-center text-center sm:border-r sm:border-border/60 lg:pr-8">
@@ -331,7 +331,7 @@ export default function PlatformReviews() {
                                 )}
                             </p>
 
-                            <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full">
+                            <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
                                 <ShieldCheck className="w-3.5 h-3.5" />
                                 <span>From Verified Users</span>
                             </div>
@@ -353,13 +353,13 @@ export default function PlatformReviews() {
                                             <span>{starNum}</span>
                                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                                         </div>
-                                        <div className="h-2.5 flex-1 bg-muted rounded-full overflow-hidden">
+                                        <div className="h-2.5 flex-1 bg-muted/80 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
                                                 style={{ width: `${percent}%` }}
                                             />
                                         </div>
-                                        <div className="w-12 text-right font-medium text-muted-foreground shrink-0">
+                                        <div className="w-10 text-right text-[11px] font-mono text-muted-foreground">
                                             {percent}%
                                         </div>
                                     </button>
@@ -368,10 +368,10 @@ export default function PlatformReviews() {
                         </div>
 
                         {/* Action Callout depending on login state */}
-                        <div className="lg:col-span-3 flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/40 border border-border/50 text-center">
+                        <div className="lg:col-span-3 flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/40 border border-border/70 text-center">
                             {isLoggedIn ? (
                                 <>
-                                    <UserCheck className="w-8 h-8 text-blue-600 dark:text-blue-400 mb-2" />
+                                    <UserCheck className="w-8 h-8 text-foreground/80 mb-2" />
                                     <h4 className="text-xs font-bold text-foreground">
                                         {userExistingReview ? "Update Your Review" : "Share Your Experience"}
                                     </h4>
@@ -383,7 +383,7 @@ export default function PlatformReviews() {
                                     <Button
                                         size="sm"
                                         onClick={handleOpenEdit}
-                                        className="rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 h-9 shadow-sm cursor-pointer"
+                                        className="btn-crystal rounded-full text-white text-xs font-semibold px-4 h-9 shadow-sm cursor-pointer"
                                     >
                                         <Edit3 className="w-3.5 h-3.5 mr-1.5" />
                                         {userExistingReview ? "Edit Your Review" : "Write a Review"}
@@ -400,7 +400,7 @@ export default function PlatformReviews() {
                                         <Link href="/login" className="w-full">
                                             <Button
                                                 size="sm"
-                                                className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold h-8 cursor-pointer"
+                                                className="w-full btn-crystal rounded-full text-white text-xs font-semibold h-8 cursor-pointer"
                                             >
                                                 Sign In to Review
                                             </Button>
@@ -409,7 +409,7 @@ export default function PlatformReviews() {
                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="w-full rounded-full text-xs font-semibold h-8 cursor-pointer"
+                                                className="w-full glass-card rounded-full text-xs font-semibold h-8 cursor-pointer"
                                             >
                                                 Create Account
                                             </Button>
@@ -771,15 +771,15 @@ export default function PlatformReviews() {
                                     key={rev._id}
                                     className={`relative flex flex-col justify-between p-6 rounded-3xl border transition-all duration-300 ${
                                         isMyReview
-                                            ? "border-blue-500/50 bg-blue-500/5 shadow-md shadow-blue-500/5 ring-1 ring-blue-500/20"
-                                            : "border-border/70 bg-card hover:border-border hover:shadow-md"
+                                            ? "border-primary/40 bg-primary/5 shadow-md ring-1 ring-primary/20 glass-card"
+                                            : "glass-card glass-card-hover"
                                     }`}
                                 >
                                     <div>
                                         {/* Card Top: Author, Verified Badge & Rating */}
                                         <div className="flex items-start justify-between gap-3 mb-3">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
+                                                <div className="w-10 h-10 rounded-2xl bg-muted text-foreground border border-border/70 font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
                                                     {rev.userName ? rev.userName.charAt(0).toUpperCase() : "U"}
                                                 </div>
                                                 <div>
@@ -788,7 +788,7 @@ export default function PlatformReviews() {
                                                             {rev.userName}
                                                         </h4>
                                                         {isMyReview && (
-                                                            <span className="px-1.5 py-0.5 rounded-md bg-blue-600 text-white text-[10px] font-bold">
+                                                            <span className="px-1.5 py-0.5 rounded-md bg-foreground text-background text-[10px] font-bold">
                                                                 You
                                                             </span>
                                                         )}

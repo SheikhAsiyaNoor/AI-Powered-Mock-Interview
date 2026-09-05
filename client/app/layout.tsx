@@ -21,13 +21,14 @@ const plusJakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   metadataBase: new URL("https://ai-powered-mock-interview-gules.vercel.app"),
   title: {
-    default: "Iperitus | AI Mock Interview & Placement Readiness Engine",
+    default: "Iperitus | Absolute pointers, zero blind spots",
     template: "%s | Iperitus",
   },
   description:
-    "Master technical & behavioral interviews with AI-powered simulations, real-time speech feedback, resume analysis, and adaptive coding challenges.",
+    "Iperitus — Absolute pointers, zero blind spots. Master technical & behavioral interviews with AI-powered simulations, real-time speech feedback, resume analysis, and adaptive coding challenges.",
   keywords: [
     "Iperitus",
+    "Absolute pointers, zero blind spots",
     "AI mock interview",
     "technical interview prep",
     "coding interview practice",
@@ -56,15 +57,15 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://ai-powered-mock-interview-gules.vercel.app",
     siteName: "Iperitus - AI Mock Interview Platform",
-    title: "Iperitus | AI Mock Interview & Placement Readiness Engine",
+    title: "Iperitus | Absolute pointers, zero blind spots",
     description:
-      "Practice tech interviews with real-time AI feedback, tailored question banks, resume evaluation, and peer challenge arena.",
+      "Absolute pointers, zero blind spots. Practice tech interviews with real-time AI feedback, tailored question banks, resume evaluation, and peer challenge arena.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Iperitus | AI Mock Interview & Placement Readiness Engine",
+    title: "Iperitus | Absolute pointers, zero blind spots",
     description:
-      "Master technical & behavioral interviews with real-time AI feedback and personalized preparation plans.",
+      "Iperitus — Absolute pointers, zero blind spots. Master technical & behavioral interviews with real-time AI feedback and personalized preparation plans.",
   },
   alternates: {
     canonical: "https://ai-powered-mock-interview-gules.vercel.app",
@@ -89,7 +90,7 @@ export default function RootLayout({
     name: "Iperitus - AI Mock Interview Platform",
     url: "https://ai-powered-mock-interview-gules.vercel.app",
     description:
-      "Iperitus: AI-Powered Mock Interview Platform & Placement Readiness Engine for students and job seekers.",
+      "Iperitus: Absolute pointers, zero blind spots. AI-Powered Mock Interview Platform & Placement Readiness Engine for students and job seekers.",
     applicationCategory: "EducationalApplication",
     operatingSystem: "All",
     offers: {
@@ -122,7 +123,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-blue-500 selection:text-white transition-colors duration-200">
+      <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-primary/25 selection:text-foreground transition-colors duration-200">
         <ThemeProvider>
           <AuthProvider>
             <Navbar />

@@ -18,7 +18,7 @@ export default function BrandLogo({
 }: BrandLogoProps) {
     return (
         <div className={`flex items-center gap-2.5 group cursor-pointer select-none ${className}`}>
-            {/* SVG Logo Icon using the exact user-designed logo.svg */}
+            {/* SVG Logo Icon */}
             <div
                 className="relative shrink-0 transition-transform duration-300 group-hover:scale-105"
                 style={{ width: size, height: size }}
@@ -28,18 +28,18 @@ export default function BrandLogo({
                     width={size}
                     height={size}
                     alt="Iperitus Logo"
-                    className="w-full h-full object-contain rounded-xl drop-shadow-md"
+                    className="w-full h-full object-contain rounded-xl"
                 />
             </div>
 
             {/* Brand Typography */}
             {showText && (
                 <div className={`flex flex-col leading-tight ${textClassName}`}>
-                    <span className="font-extrabold text-base tracking-tight text-foreground group-hover:text-blue-600 transition-colors">
+                    <span className="font-extrabold text-base tracking-tight text-foreground transition-colors">
                         Iperitus
                     </span>
-                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold -mt-0.5">
-                        AI Powered
+                    <span className="text-[10px] text-muted-foreground font-medium tracking-tight -mt-0.5 whitespace-nowrap">
+                        Absolute pointers, zero blind spots
                     </span>
                 </div>
             )}
