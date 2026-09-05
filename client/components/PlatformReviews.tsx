@@ -315,8 +315,8 @@ export default function PlatformReviews() {
                         {/* Overall Score */}
                         <div className="lg:col-span-4 flex flex-col items-center justify-center text-center sm:border-r sm:border-border/60 lg:pr-8">
                             <div className="text-5xl sm:text-6xl font-black text-foreground tracking-tight flex items-baseline gap-1">
-                                <span>{stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "—"}</span>
-                                <span className="text-lg sm:text-xl font-bold text-muted-foreground">{stats.totalReviews > 0 ? "/ 5.0" : "New"}</span>
+                                <span>{stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "0.0"}</span>
+                                <span className="text-lg sm:text-xl font-bold text-muted-foreground">/ 5.0</span>
                             </div>
 
                             <div className="my-2.5">
@@ -333,7 +333,7 @@ export default function PlatformReviews() {
 
                             <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full">
                                 <ShieldCheck className="w-3.5 h-3.5" />
-                                <span>100% Authentic Verified Users</span>
+                                <span>From Verified Users</span>
                             </div>
                         </div>
 
