@@ -14,7 +14,7 @@ export default function Home() {
             {/* Hero Section */}
             <section className="pt-16 md:pt-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center space-y-6">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20 text-xs font-bold tracking-wide">
-                    <span>🚀</span> AI-POWERED MOCK INTERVIEW PLATFORM
+                    <span>🚀</span> IPERITUS — AI-POWERED MOCK INTERVIEW
                 </div>
 
                 <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
@@ -167,7 +167,7 @@ export default function Home() {
                 <Card className="p-8 sm:p-12 text-center bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl space-y-4 shadow-xl">
                     <h2 className="text-2xl sm:text-4xl font-extrabold">Ready to Ace Your Next Interview?</h2>
                     <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto">
-                        Join thousands of developers using AI Mock Interview to sharpen their answers and land job offers.
+                        Join thousands of developers using Iperitus to sharpen their answers and land job offers.
                     </p>
                     <div className="pt-2">
                         <Link href="/register">

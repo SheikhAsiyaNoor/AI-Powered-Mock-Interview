@@ -305,7 +305,7 @@ export default function PlatformReviews() {
                         What Practicing Candidates Say
                     </h2>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                        Real feedback from developers and students who practiced technical interviews and elevated their careers with AI Mock Interview.
+                        Real feedback from developers and students who practiced technical interviews and elevated their careers with Iperitus.
                     </p>
                 </div>
 

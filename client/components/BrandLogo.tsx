@@ -27,7 +27,7 @@ export default function BrandLogo({
                     src="/logo.svg"
                     width={size}
                     height={size}
-                    alt="AI Mock Interview Logo"
+                    alt="Iperitus Logo"
                     className="w-full h-full object-contain rounded-xl drop-shadow-md"
                 />
             </div>
@@ -36,7 +36,7 @@ export default function BrandLogo({
             {showText && (
                 <div className={`flex flex-col leading-tight ${textClassName}`}>
                     <span className="font-extrabold text-base tracking-tight text-foreground group-hover:text-blue-600 transition-colors">
-                        MockInterview
+                        Iperitus
                     </span>
                     <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold -mt-0.5">
                         AI Powered

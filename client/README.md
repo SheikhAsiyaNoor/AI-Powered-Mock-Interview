@@ -1,6 +1,6 @@
-# 💻 AI Mock Interview — Client
+# 💻 Iperitus — Client
 
-Frontend web application for the **AI-Powered Mock Interview Platform & Placement Readiness Engine**.
+Frontend web application for the **Iperitus: AI-Powered Mock Interview Platform & Placement Readiness Engine**.
 
 🔗 **Live URL:** [https://ai-powered-mock-interview-gules.vercel.app/](https://ai-powered-mock-interview-gules.vercel.app/)
 

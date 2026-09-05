@@ -140,9 +140,9 @@ const getSenderEmail = () => {
     return process.env.EMAIL_FROM.replace(/['"]/g, "").trim();
   }
   if (emailUser) {
-    return `"AI Mock Interview" <${emailUser}>`;
+    return `"Iperitus" <${emailUser}>`;
   }
-  return '"AI Mock Interview Platform" <noreply@aimockinterview.com>';
+  return '"Iperitus" <noreply@iperitus.com>';
 };
 
 /**
@@ -186,7 +186,7 @@ const deliverEmail = async ({ to, name, subject, htmlContent }) => {
 const sendVerificationEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const verificationUrl = `${clientUrl}/verify-email?token=${encodeURIComponent(token)}`;
-  const subject = "Verify your email address - AI Mock Interview";
+  const subject = "Verify your email address - Iperitus";
   const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -209,12 +209,12 @@ const sendVerificationEmail = async ({ to, name, token }) => {
 <body>
   <div class="container">
     <div class="header">
-      <div class="badge">AI Mock Interview</div>
+      <div class="badge">Iperitus</div>
       <h1 class="title">Verify Your Email Address</h1>
       <p class="subtitle">Welcome onboard, ${name || "Candidate"}!</p>
     </div>
     <div class="content">
-      <p>Thank you for registering on the <strong>AI-Powered Mock Interview & Peer Arena Platform</strong>.</p>
+      <p>Thank you for registering on <strong>Iperitus — AI-Powered Mock Interview Platform</strong>.</p>
       <p>To activate your candidate profile and begin practicing with AI voice simulators and peer coding challenges, please verify your email address by clicking the button below:</p>
       <div class="button-wrap">
         <a href="${verificationUrl}" class="btn" target="_blank">Verify Email Address</a>
@@ -226,7 +226,7 @@ const sendVerificationEmail = async ({ to, name, token }) => {
       </div>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} AI-Powered Mock Interview Platform. All rights reserved.
+      &copy; ${new Date().getFullYear()} Iperitus. All rights reserved.
     </div>
   </div>
 </body>
@@ -243,7 +243,7 @@ const sendVerificationEmail = async ({ to, name, token }) => {
 const sendPasswordResetEmail = async ({ to, name, token }) => {
   const clientUrl = getClientUrl();
   const resetUrl = `${clientUrl}/reset-password?token=${encodeURIComponent(token)}`;
-  const subject = "Password Reset Request - AI Mock Interview";
+  const subject = "Password Reset Request - Iperitus";
   const htmlContent = `
 <!DOCTYPE html>
 <html>
@@ -272,7 +272,7 @@ const sendPasswordResetEmail = async ({ to, name, token }) => {
       <p class="subtitle">Hello, ${name || "Candidate"}</p>
     </div>
     <div class="content">
-      <p>We received a request to reset the password for your AI Mock Interview account.</p>
+      <p>We received a request to reset the password for your Iperitus account.</p>
       <p>Click the secure button below to choose a new password:</p>
       <div class="button-wrap">
         <a href="${resetUrl}" class="btn" target="_blank">Reset My Password</a>
@@ -287,7 +287,7 @@ const sendPasswordResetEmail = async ({ to, name, token }) => {
       </div>
     </div>
     <div class="footer">
-      &copy; ${new Date().getFullYear()} AI-Powered Mock Interview Platform. All rights reserved.
+      &copy; ${new Date().getFullYear()} Iperitus. All rights reserved.
     </div>
   </div>
 </body>
@@ -322,7 +322,7 @@ const sendPasswordChangedConfirmation = async ({ to, name }) => {
     <h1 class="title">Your Password Was Successfully Changed</h1>
     <div class="content">
       <p>Hello ${name || "Candidate"},</p>
-      <p>This email confirms that the password for your AI Mock Interview account was recently updated on <strong>${new Date().toUTCString()}</strong>.</p>
+      <p>This email confirms that the password for your Iperitus account was recently updated on <strong>${new Date().toUTCString()}</strong>.</p>
       <p>All previous active sessions have been automatically invalidated for your security.</p>
       <p>If you did not make this change, please contact platform administrators immediately or reset your password.</p>
     </div>

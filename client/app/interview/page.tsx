@@ -341,7 +341,7 @@ function InterviewContent() {
                                 </span>
                             )}
                         </div>
-                        <p className="text-xs text-muted-foreground">AI Mock Interview Session</p>
+                        <p className="text-xs text-muted-foreground">Iperitus Interview Session</p>
                     </div>
                 </div>
 
