@@ -208,10 +208,11 @@ export default function CompanySimulationRoom() {
     const handleAutoQuitSimulation = async () => {
         if (session && !session.isComplete) {
             try {
-                const { data } = await axiosInstance.post("/api/simulator/end", {
-                    sessionId: id,
+                const { data } = await api.post("/api/simulator/end", {
+                    sessionId,
                     forceQuitReason: "Candidate disqualified due to 4 tab switch violations during live evaluation."
                 });
+
                 if (data?.interview) {
                     setSession(data.interview);
                 }
@@ -232,9 +233,10 @@ export default function CompanySimulationRoom() {
         maxAllowedSwitches: 4,
         isActive: isLoggedIn && !loading && !!session && !session.isComplete,
         sessionType: "interview",
-        storageKey: `iperitus_proctor_sim_${id}`,
+        storageKey: `iperitus_proctor_sim_${sessionId}`,
         onAutoQuit: handleAutoQuitSimulation
     });
+
 
 
     if (authLoading || loading) {
