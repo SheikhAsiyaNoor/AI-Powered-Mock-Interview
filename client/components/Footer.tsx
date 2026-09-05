@@ -28,15 +28,8 @@ export default function Footer() {
                         <p className="text-xs sm:text-sm text-muted-foreground font-medium max-w-md leading-relaxed">
                             Absolute pointers, zero blind spots. High-performance AI mock interview & placement readiness engine engineered for career acceleration.
                         </p>
-                        <div className="pt-1 flex items-center gap-2 text-[11px] text-muted-foreground/80 font-semibold">
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                Anti-Cheat Proctor Active
-                            </span>
-                            <span>·</span>
-                            <span>Real-Time Evaluation</span>
-                        </div>
                     </div>
+
 
                     {/* Column 2: Navigation Links */}
                     <div className="space-y-3">
