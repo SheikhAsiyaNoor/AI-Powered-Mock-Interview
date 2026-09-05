@@ -102,9 +102,7 @@ export default function Footer() {
                 {/* Bottom Row: Creator Credit, Copyright, and Legal */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-1.5 font-medium">
-                        <span>Made with</span>
-                        <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 inline animate-pulse" />
-                        <span>by</span>
+                        <span>Made by</span>
                         <span className="font-bold text-foreground hover:text-primary transition-colors">
                             Sheikh Asiya Noor
                         </span>
