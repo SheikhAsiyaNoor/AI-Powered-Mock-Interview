@@ -358,7 +358,7 @@ export default function ReadinessPage() {
 
     return (
         <div className="min-h-screen bg-background text-foreground flex flex-col">
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <main className="flex-1 max-w-screen-2xl w-full mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 space-y-8">
                 {/* HERO HEADER SECTION */}
                 <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-blue-900/90 via-indigo-900/90 to-purple-950/90 text-white p-6 sm:p-8 border border-white/10 shadow-2xl">
                     <div className="absolute top-0 right-0 -mt-10 -mr-10 w-80 h-80 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>

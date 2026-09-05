@@ -53,7 +53,7 @@ const Navbar = () => {
                     : "bg-background/60 backdrop-blur-md border-b border-border/40"
             }`}
         >
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
                 <div className="flex items-center justify-between h-16">
                     {/* Brand Logo */}
                     <Link href={isLoggedIn ? "/dashboard" : "/"}>
@@ -82,7 +82,7 @@ const Navbar = () => {
                     </nav>
 
                     {/* Auth User Action Buttons & Security Links */}
-                    <div className="hidden md:flex items-center gap-2.5">
+                    <div className="hidden lg:flex items-center gap-2.5">
                         {/* Theme Toggle Button */}
                         <ThemeToggle />
 
@@ -180,7 +180,7 @@ const Navbar = () => {
 
             {/* Mobile Navigation Dropdown Menu */}
             {mobileOpen && (
-                <div className="lg:hidden border-b border-border bg-background px-4 pt-2 pb-4 space-y-2">
+                <div className="lg:hidden border-b border-border bg-background px-4 pt-2 pb-4 space-y-2 max-h-[85vh] overflow-y-auto">
                     {navLinks.map((link) => (
                         <Link
                             key={link.href}

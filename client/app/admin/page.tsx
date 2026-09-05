@@ -159,7 +159,7 @@ export default function AdminControlCenter() {
 
     return (
         <RoleGuard allowedRoles={["admin"]}>
-            <div className="min-h-screen bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+            <div className="min-h-screen bg-background text-foreground py-8 sm:py-10 px-4 sm:px-6 lg:px-8 xl:px-12 max-w-screen-2xl mx-auto">
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-6 mb-8 border-b border-border/40 gap-4">
                     <div>

@@ -417,9 +417,54 @@ const getCompanyInterview = async (req, res) => {
     }
 };
 
+const endCompanyInterview = async (req, res) => {
+    try {
+        const { sessionId, forceQuitReason } = req.body;
+        if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+            return res.status(400).json({ message: "Valid sessionId required" });
+        }
+        const interview = await Interview.findOne({ _id: sessionId, userId: req.userId });
+        if (!interview) {
+            return res.status(404).json({ message: "Simulation session not found" });
+        }
+
+        interview.isComplete = true;
+        interview.score = 0;
+        interview.companyEvaluation = {
+            hiringVerdict: "No Hire",
+            companyCutoff: interview.companyEvaluation?.companyCutoff || 75,
+            companyStandardMet: false,
+            dimensionScores: {
+                technicalDepth: 0,
+                systemArchitecture: 0,
+                culturalAlignment: 0,
+                communication: 0
+            },
+            cultureAlignmentFeedback: "Candidate disqualified due to anti-cheating policy violation.",
+            companySpecificFeedback: forceQuitReason || "Session auto-terminated due to multiple tab-switch violations."
+        };
+        interview.duration = Math.max(
+            1,
+            Math.round((Date.now() - new Date(interview.createdAt).getTime()) / 60000)
+        );
+        await interview.save();
+
+        res.json({
+            success: true,
+            interview,
+            message: "Simulation ended and recorded as disqualified."
+        });
+    } catch (err) {
+        console.error("Error ending company simulation:", err);
+        res.status(500).json({ message: "Failed to end simulation session" });
+    }
+};
+
 module.exports = {
     getCompanies,
     startCompanyInterview,
     submitCompanyAnswer,
-    getCompanyInterview
+    getCompanyInterview,
+    endCompanyInterview
 };
+

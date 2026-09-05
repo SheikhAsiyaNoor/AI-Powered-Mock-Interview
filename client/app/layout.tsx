@@ -3,6 +3,7 @@ import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import { AuthProvider } from "@/context/Authcontext";
 import { ThemeProvider } from "@/context/ThemeContext";
 
@@ -123,15 +124,17 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="font-sans min-h-screen bg-background text-foreground antialiased selection:bg-primary/25 selection:text-foreground transition-colors duration-200">
+      <body className="font-sans min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary/25 selection:text-foreground transition-colors duration-200 overflow-x-hidden">
         <ThemeProvider>
           <AuthProvider>
             <Navbar />
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
+            <Footer />
           </AuthProvider>
         </ThemeProvider>
         <Analytics />
       </body>
+
     </html>
   );
 }

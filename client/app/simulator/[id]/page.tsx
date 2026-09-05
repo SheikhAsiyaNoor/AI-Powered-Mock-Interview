@@ -205,9 +205,19 @@ export default function CompanySimulationRoom() {
         handleSendAnswer(undefined, "skip");
     };
 
-    const handleAutoQuitSimulation = () => {
+    const handleAutoQuitSimulation = async () => {
         if (session && !session.isComplete) {
-            handleSendAnswer(undefined, "[Session auto-terminated due to multiple tab switch violations.]");
+            try {
+                const { data } = await axiosInstance.post("/api/simulator/end", {
+                    sessionId: id,
+                    forceQuitReason: "Candidate disqualified due to 4 tab switch violations during live evaluation."
+                });
+                if (data?.interview) {
+                    setSession(data.interview);
+                }
+            } catch (e) {
+                console.error("Error auto-ending simulation:", e);
+            }
         }
     };
 
@@ -222,8 +232,10 @@ export default function CompanySimulationRoom() {
         maxAllowedSwitches: 4,
         isActive: isLoggedIn && !loading && !!session && !session.isComplete,
         sessionType: "interview",
+        storageKey: `iperitus_proctor_sim_${id}`,
         onAutoQuit: handleAutoQuitSimulation
     });
+
 
     if (authLoading || loading) {
         return (
@@ -271,7 +283,7 @@ export default function CompanySimulationRoom() {
     };
 
     return (
-        <div className="font-sans max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <div className="font-sans max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
             {/* HEADER BAR */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/50">
                 <div className="flex items-center gap-3">
@@ -578,8 +590,10 @@ export default function CompanySimulationRoom() {
                 isTerminated={isTerminated}
                 terminationMessage={terminationMessage}
                 sessionType="interview"
-                onDismiss={dismissWarning}
+                onDismiss={() => dismissWarning(isTerminated)}
+                onViewResults={() => dismissWarning(true)}
             />
+
         </div>
     );
 }

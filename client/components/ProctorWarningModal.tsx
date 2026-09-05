@@ -87,21 +87,30 @@ export const ProctorWarningModal: React.FC<ProctorWarningModalProps> = ({
                 <div className="pt-2">
                     {isTerminated ? (
                         <Button
-                            onClick={onViewResults || onDismiss}
-                            className="w-full h-11 rounded-2xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs shadow-lg cursor-pointer"
+                            id="btn-acknowledge-view-results"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (onViewResults) {
+                                    onViewResults();
+                                }
+                                onDismiss();
+                            }}
+                            className="w-full h-11 rounded-2xl bg-destructive hover:bg-destructive/90 text-destructive-foreground font-bold text-xs shadow-lg cursor-pointer transition-all active:scale-98"
                         >
                             <span>Acknowledge & View Results</span>
                             <ArrowRight className="w-4 h-4 ml-1.5" />
                         </Button>
                     ) : (
                         <Button
+                            id="btn-understand-resume"
                             onClick={onDismiss}
-                            className="w-full h-11 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 cursor-pointer"
+                            className="w-full h-11 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xs shadow-lg shadow-primary/20 cursor-pointer transition-all active:scale-98"
                         >
                             I Understand — Resume {sessionType.charAt(0).toUpperCase() + sessionType.slice(1)}
                         </Button>
                     )}
                 </div>
+
             </div>
         </div>
     );

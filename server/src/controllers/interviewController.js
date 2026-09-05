@@ -365,9 +365,49 @@ const getInterview = async (req, res) => {
     }
 };
 
+const endInterview = async (req, res) => {
+    try {
+        const { sessionId, forceQuitReason, score = 0 } = req.body;
+        if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
+            return res.status(400).json({ message: "Valid sessionId required" });
+        }
+        const interview = await Interview.findOne({ _id: sessionId, userId: req.userId });
+        if (!interview) {
+            return res.status(404).json({ message: "Interview session not found" });
+        }
+
+        const isDisqualified = Boolean(forceQuitReason);
+        interview.isComplete = true;
+        interview.score = isDisqualified ? 0 : (typeof score === 'number' ? score : interview.score || 0);
+        if (forceQuitReason) {
+            interview.feedback = `[DISQUALIFIED] ${forceQuitReason}`;
+            interview.progressionReport = `Interview Terminated & Disqualified: ${forceQuitReason}`;
+        }
+        interview.duration = Math.max(
+            1,
+            Math.round((Date.now() - new Date(interview.createdAt).getTime()) / 60000)
+        );
+        await interview.save();
+
+        res.json({
+            success: true,
+            sessionId: interview._id,
+            isComplete: true,
+            score: interview.score,
+            feedback: interview.feedback,
+            progressionReport: interview.progressionReport,
+            isDisqualified
+        });
+    } catch (err) {
+        console.error("Error ending interview: ", err);
+        res.status(500).json({ message: "Server error ending interview" });
+    }
+};
+
 module.exports = {
     startInterview,
     submitAnswer,
     getInterviews,
     getInterview,
+    endInterview,
 };

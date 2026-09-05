@@ -99,6 +99,7 @@ function InterviewContent() {
     const [sessionId, setSessionId] = useState<string>("");
     const [interviewScore, setInterviewScore] = useState<number | null>(null);
     const [isInterviewComplete, setIsInterviewComplete] = useState(false);
+    const [isDisqualified, setIsDisqualified] = useState(false);
     const [questionsAnswered, setQuestionsAnswered] = useState(0);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -119,23 +120,41 @@ function InterviewContent() {
 
     const voice = useVoiceInterview({ autoSpeak: true, initialRate: 1.0 });
 
+    const proctorStorageKey = `iperitus_proctor_interview_${encodeURIComponent(domain)}`;
+    const disqualifiedStorageKey = `iperitus_disqualified_interview_${encodeURIComponent(domain)}`;
+
     const handleSkipQuestion = () => {
         handleSendMessage("[Skipped Question]");
     };
 
     const handleAutoQuitInterview = async () => {
         setIsInterviewComplete(true);
+        setIsDisqualified(true);
+        setInterviewScore(0);
+        setProgressionReport("Interview Auto-Terminated: You switched tabs 4 times during the live evaluation. Session has been disqualified.");
         voice.stopSpeaking();
         voice.stopListening();
+
+        if (typeof window !== "undefined") {
+            try {
+                sessionStorage.setItem(disqualifiedStorageKey, JSON.stringify({
+                    disqualified: true,
+                    domain,
+                    sessionId,
+                    timestamp: Date.now()
+                }));
+            } catch (e) {}
+        }
+
         if (sessionId) {
             try {
                 const { data } = await axiosInstance.post("/api/interviews/end", {
                     sessionId,
-                    forceQuitReason: "Session terminated due to 4 tab-switch violations."
+                    forceQuitReason: "Session terminated due to 4 tab-switch violations.",
+                    score: 0
                 });
                 if (data) {
                     setInterviewScore(typeof data.score === 'number' ? data.score : 0);
-                    setProgressionReport("Interview Auto-Terminated: You switched tabs 4 times during the live evaluation.");
                 }
             } catch (err) {
                 console.error("Error auto-ending interview:", err);
@@ -149,13 +168,20 @@ function InterviewContent() {
         showWarningModal,
         isTerminated,
         terminationMessage,
-        dismissWarning
+        dismissWarning,
+        resetProctor
     } = useTabSwitchProctor({
         maxAllowedSwitches: 4,
         isActive: isLoggedIn && !isInterviewComplete && !!sessionId,
         sessionType: "interview",
+        storageKey: proctorStorageKey,
         onAutoQuit: handleAutoQuitInterview
     });
+
+    const handleViewResultsAfterDisqualification = () => {
+        dismissWarning(true);
+        setIsInterviewComplete(true);
+    };
 
     useEffect(() => {
         if (!authLoading && !isLoggedIn) {
@@ -164,14 +190,34 @@ function InterviewContent() {
     }, [isLoggedIn, authLoading, router]);
 
     useEffect(() => {
-        if (isLoggedIn) startInterview();
-    }, [isLoggedIn]);
+        if (!isLoggedIn) return;
+
+        // Check if session for this domain was previously disqualified to prevent restart on refresh
+        if (typeof window !== "undefined") {
+            try {
+                const raw = sessionStorage.getItem(disqualifiedStorageKey);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed.disqualified) {
+                        setIsDisqualified(true);
+                        setIsInterviewComplete(true);
+                        setInterviewScore(0);
+                        setProgressionReport("Interview Auto-Terminated: You switched tabs 4 times during the live evaluation. Session was disqualified as per anti-cheating policy.");
+                        return;
+                    }
+                }
+            } catch (e) {}
+        }
+
+        startInterview();
+    }, [isLoggedIn, domain]);
 
     useEffect(() => {
         if (isInterviewComplete) return;
         const t = setInterval(() => setElapsedSeconds((s) => s + 1), 1000);
         return () => clearInterval(t);
     }, [isInterviewComplete]);
+
 
     const startInterview = async () => {
         try {
@@ -324,7 +370,7 @@ function InterviewContent() {
     const shortDomainName = domain.split("/")[0];
 
     return (
-        <div className="font-sans max-w-5xl mx-auto px-4 py-6">
+        <div className="font-sans max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border/60">
                 <div className="flex items-center gap-3">
@@ -429,10 +475,22 @@ function InterviewContent() {
             <div>
                 {isInterviewComplete ? (
                     <div className="space-y-6">
+                        {/* Disqualification Banner */}
+                        {isDisqualified && (
+                            <div className="p-4 rounded-3xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-center space-y-1">
+                                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-rose-600 text-white uppercase tracking-wider">
+                                    Session Disqualified
+                                </div>
+                                <p className="text-xs font-semibold">
+                                    Tab switch policy violated (4 switches detected). Interview auto-terminated and score recorded as 0%.
+                                </p>
+                            </div>
+                        )}
+
                         {/* Completion Banner */}
                         <Card className="p-6 text-center border border-border/50 rounded-3xl bg-card shadow-2xs">
-                            <h2 className={`text-xl font-bold ${scoreLabel.color} flex items-center justify-center gap-2`}>
-                                {scoreLabel.text}
+                            <h2 className={`text-xl font-bold ${isDisqualified ? "text-rose-600 dark:text-rose-400" : scoreLabel.color} flex items-center justify-center gap-2`}>
+                                {isDisqualified ? "Disqualified: Anti-Cheat Violation ⚠️" : scoreLabel.text}
                             </h2>
                         </Card>
 
@@ -448,33 +506,33 @@ function InterviewContent() {
                                 <div className="w-8 h-8 rounded-lg bg-amber-400/20 flex items-center justify-center text-lg mb-2">
                                     {domainEmoji}
                                 </div>
-                                <p className="text-lg font-bold text-foreground">{shortDomainName}</p>
+                                <p className="text-xl font-black text-foreground">{shortDomainName}</p>
                                 <p className="text-xs text-muted-foreground font-medium mt-1">Domain</p>
                             </Card>
 
                             <Card className="p-6 text-center border border-border/50 rounded-2xl flex flex-col items-center justify-center">
-                                <span className="text-2xl mb-2">⏱</span>
-                                <p className="text-2xl font-black text-foreground">{formatTime(elapsedSeconds)}</p>
-                                <p className="text-xs text-muted-foreground font-medium mt-1">Duration</p>
+                                <span className="text-3xl font-bold text-blue-500 mb-2">🎯</span>
+                                <p className="text-2xl font-black text-foreground">{isDisqualified ? 0 : score}%</p>
+                                <p className="text-xs text-muted-foreground font-medium mt-1">Final Score</p>
                             </Card>
                         </div>
 
                         {/* Performance Breakdown */}
                         <Card className="p-6 border border-border/50 rounded-3xl bg-card shadow-2xs">
-                            <h3 className="text-base font-bold text-foreground mb-6">Performance Breakdown</h3>
+                            <h3 className="text-base font-bold text-foreground mb-6">Score Breakdown</h3>
                             <div className="space-y-5">
                                 {[
                                     {
                                         label: "Technical Accuracy",
-                                        pct: Math.max(0, Math.min(100, dimensionScores?.technicalAccuracy ?? score)),
+                                        pct: isDisqualified ? 0 : Math.max(0, Math.min(100, dimensionScores?.technicalAccuracy ?? Math.round(score * 0.95))),
                                     },
                                     {
                                         label: "Communication Clarity",
-                                        pct: Math.max(0, Math.min(100, dimensionScores?.communicationClarity ?? score)),
+                                        pct: isDisqualified ? 0 : Math.max(0, Math.min(100, dimensionScores?.communicationClarity ?? Math.round(score * 1.05))),
                                     },
                                     {
                                         label: "Problem-Solving Approach",
-                                        pct: Math.max(0, Math.min(100, dimensionScores?.problemSolving ?? score)),
+                                        pct: isDisqualified ? 0 : Math.max(0, Math.min(100, dimensionScores?.problemSolving ?? score)),
                                     },
                                 ].map((bar, i) => {
                                     const textColor =
@@ -552,6 +610,14 @@ function InterviewContent() {
                             <Button
                                 variant="outline"
                                 onClick={() => {
+                                    if (typeof window !== "undefined") {
+                                        try {
+                                            sessionStorage.removeItem(disqualifiedStorageKey);
+                                            sessionStorage.removeItem(proctorStorageKey);
+                                        } catch (e) {}
+                                    }
+                                    resetProctor();
+                                    setIsDisqualified(false);
                                     setIsInterviewComplete(false);
                                     setInterviewScore(null);
                                     setQuestionsAnswered(0);
@@ -561,7 +627,7 @@ function InterviewContent() {
                                 }}
                                 className="rounded-full px-6 py-2.5 font-semibold border-border cursor-pointer flex items-center gap-2"
                             >
-                                <span>🔄</span> Try Again
+                                <span>🔄</span> Retake Interview
                             </Button>
                             <Button
                                 onClick={handleEndInterview}
@@ -648,7 +714,8 @@ function InterviewContent() {
                 isTerminated={isTerminated}
                 terminationMessage={terminationMessage}
                 sessionType="interview"
-                onDismiss={dismissWarning}
+                onDismiss={() => dismissWarning(isTerminated)}
+                onViewResults={handleViewResultsAfterDisqualification}
             />
         </div>
     );

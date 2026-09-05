@@ -24,9 +24,11 @@ import {
     Target,
     Layers,
     ListPlus,
-    Wand2
+    Wand2,
+    Star
 } from "lucide-react";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import PlatformReviews from "@/components/PlatformReviews";
 
 interface Interview {
     id: string;
@@ -913,11 +915,11 @@ function DashboardContent() {
     const [showDomainSelector, setShowDomainSelector] = useState(false);
     const [selectedInterview, setSelectedInterview] = useState<Interview | null>(null);
     const [filterDomain, setFilterDomain] = useState<string>("All");
-    const [activeTab, setActiveTab] = useState<"history" | "resume">("history");
+    const [activeTab, setActiveTab] = useState<"history" | "resume" | "reviews">("history");
 
     useEffect(() => {
         const tab = searchParams.get("tab");
-        if (tab === "history" || tab === "resume") {
+        if (tab === "history" || tab === "resume" || tab === "reviews") {
             setActiveTab(tab);
         }
     }, [searchParams]);
@@ -946,6 +948,14 @@ function DashboardContent() {
         router.push(`/interview?domain=${encodeURIComponent(domain)}`);
     };
 
+    const handleGoToReviews = () => {
+        setActiveTab("reviews");
+        setTimeout(() => {
+            const el = document.getElementById("candidate-reviews-panel");
+            if (el) el.scrollIntoView({ behavior: "smooth" });
+        }, 80);
+    };
+
     if (authLoading) {
         return (
             <div className="min-h-[60vh] flex items-center justify-center text-sm font-semibold text-muted-foreground">
@@ -967,40 +977,47 @@ function DashboardContent() {
     const userName = user?.name ? user.name.split(" ")[0] : "User";
 
     return (
-        <div className="font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="font-sans max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-6 sm:py-8">
             {/* Header Section */}
             <section className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <p className="text-sm font-medium text-muted-foreground flex items-center gap-1.5 mb-1">
                         <span>👋</span> Welcome back, <span className="font-semibold text-foreground">{userName}</span>
                     </p>
-                    <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Your Dashboard</h1>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">Your Dashboard</h1>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto pb-1 sm:pb-0">
                     <Button
                         onClick={() => router.push("/arena")}
-                        className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-md shadow-orange-500/20 text-xs"
+                        className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md text-xs shrink-0"
                     >
                         <span>⚔️</span> Peer Arena
                     </Button>
                     <Button
                         onClick={() => router.push("/simulator")}
                         variant="outline"
-                        className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-semibold px-3.5 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs text-xs"
+                        className="border-indigo-500/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950 font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
                     >
                         <span>🏢</span> Simulator
                     </Button>
                     <Button
                         onClick={() => router.push("/readiness")}
                         variant="outline"
-                        className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 font-semibold px-3.5 py-2 rounded-xl flex items-center gap-2 cursor-pointer shadow-2xs text-xs"
+                        className="border-blue-500/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950 font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
                     >
                         <span>🚀</span> Readiness
                     </Button>
                     <Button
+                        onClick={handleGoToReviews}
+                        variant="outline"
+                        className="border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/40 font-semibold px-3 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer text-xs shrink-0"
+                    >
+                        <span>⭐</span> Reviews
+                    </Button>
+                    <Button
                         onClick={() => setShowDomainSelector(true)}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold shadow-xs flex items-center gap-2 transition-colors cursor-pointer text-xs"
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl font-semibold shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer text-xs shrink-0"
                     >
                         <span>⚡</span> New Interview
                     </Button>
@@ -1065,7 +1082,7 @@ function DashboardContent() {
             </div>
 
             {/* Stat Cards Grid */}
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
                 {[
                     {
                         label: "Total Sessions",
@@ -1093,13 +1110,13 @@ function DashboardContent() {
                         icon: "⏱️",
                     },
                 ].map((stat, i) => (
-                    <Card key={i} className="p-5 border border-border/50 bg-card rounded-2xl shadow-2xs hover:shadow-md transition-shadow">
-                        <div className="flex items-start justify-between mb-3">
-                            <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
-                            <span className="text-lg">{stat.icon}</span>
+                    <Card key={i} className="p-3.5 sm:p-5 border border-border/50 bg-card rounded-2xl shadow-2xs hover:shadow-md transition-shadow">
+                        <div className="flex items-start justify-between mb-2 sm:mb-3">
+                            <p className="text-[11px] sm:text-xs font-medium text-muted-foreground">{stat.label}</p>
+                            <span className="text-base sm:text-lg">{stat.icon}</span>
                         </div>
                         <p
-                            className={`text-3xl font-black mb-1 ${
+                            className={`text-2xl sm:text-3xl font-black mb-1 ${
                                 (stat as any).accent
                                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent"
                                     : "text-foreground"
@@ -1107,7 +1124,7 @@ function DashboardContent() {
                         >
                             {stat.value}
                         </p>
-                        <p className="text-xs text-muted-foreground font-medium">{stat.sub}</p>
+                        <p className="text-[11px] sm:text-xs text-muted-foreground font-medium">{stat.sub}</p>
                     </Card>
                 ))}
             </section>
@@ -1132,22 +1149,50 @@ function DashboardContent() {
 
             {/* Tabs Header */}
             <section className="mt-8 border-b border-border/60">
-                <div className="flex gap-6">
-                    {(["history", "resume"] as const).map((tab) => (
+                <div className="flex gap-4 sm:gap-6 overflow-x-auto no-scrollbar">
+                    {(["history", "resume", "reviews"] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`pb-3 text-sm font-semibold flex items-center gap-2 border-b-2 transition-all cursor-pointer ${
+                            className={`pb-3 text-xs sm:text-sm font-semibold flex items-center gap-1.5 sm:gap-2 border-b-2 transition-all cursor-pointer shrink-0 ${
                                 activeTab === tab
-                                    ? "border-blue-600 text-blue-600"
+                                    ? "border-primary text-primary"
                                     : "border-transparent text-muted-foreground hover:text-foreground"
                             }`}
                         >
-                            <span>{tab === "history" ? "📋 Interview History" : "📄 Resume Analysis"}</span>
+                            <span>
+                                {tab === "history"
+                                    ? "📋 Interview History"
+                                    : tab === "resume"
+                                    ? "📄 Resume Analysis"
+                                    : "⭐ Candidate Reviews"}
+                            </span>
                         </button>
                     ))}
                 </div>
             </section>
+
+            {/* Review Callout Banner (when on history tab) */}
+            {activeTab === "history" && (
+                <div className="mt-6 p-4 rounded-2xl glass-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-xs">
+                    <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center justify-center text-base shrink-0">
+                            ⭐
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-foreground">How was your interview practice?</h4>
+                            <p className="text-muted-foreground">Share your verified candidate feedback to help fellow students and devs prepare effectively.</p>
+                        </div>
+                    </div>
+                    <Button
+                        size="sm"
+                        onClick={handleGoToReviews}
+                        className="btn-crystal rounded-full text-xs font-semibold px-4 h-8 shrink-0 cursor-pointer shadow-xs"
+                    >
+                        Write a Review ✨
+                    </Button>
+                </div>
+            )}
 
             {/* Tabs Content */}
             {activeTab === "history" && (
@@ -1283,6 +1328,13 @@ function DashboardContent() {
             {/* Resume Analysis Tab Content */}
             {activeTab === "resume" && <ResumePanel onDomainSelect={handleSelectDomain} />}
 
+            {/* Candidate Reviews & Feedback Tab Content */}
+            {activeTab === "reviews" && (
+                <div id="candidate-reviews-panel" className="mt-6 scroll-mt-24">
+                    <PlatformReviews initialOpenForm={true} showSectionHeader={false} />
+                </div>
+            )}
+
             {/* Domain Selector Modal */}
             {showDomainSelector && (
                 <div
@@ -1291,11 +1343,11 @@ function DashboardContent() {
                         if (e.target === e.currentTarget) setShowDomainSelector(false);
                     }}
                 >
-                    <Card className="w-full max-w-xl p-6 rounded-3xl border border-border bg-card shadow-xl">
+                    <Card className="w-full max-w-xl p-4 sm:p-6 rounded-3xl border border-border bg-card shadow-xl">
                         <div className="flex items-center justify-between mb-4">
                             <div>
-                                <h2 className="text-xl font-bold text-foreground">Pick a Domain</h2>
-                                <p className="text-sm text-muted-foreground">Choose what you want to practice today</p>
+                                <h2 className="text-lg sm:text-xl font-bold text-foreground">Pick a Domain</h2>
+                                <p className="text-xs sm:text-sm text-muted-foreground">Choose what you want to practice today</p>
                             </div>
                             <Button
                                 variant="ghost"
@@ -1315,14 +1367,14 @@ function DashboardContent() {
                                         setShowDomainSelector(false);
                                         handleSelectDomain(domain.label);
                                     }}
-                                    className="p-4 rounded-2xl border border-border/60 hover:border-blue-600/50 hover:bg-muted/40 transition-all cursor-pointer flex items-center gap-3"
+                                    className="p-3.5 sm:p-4 rounded-2xl border border-border/60 hover:border-blue-600/50 hover:bg-muted/40 transition-all cursor-pointer flex items-center gap-3"
                                 >
                                     <div className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-600 flex items-center justify-center text-xl font-bold flex-shrink-0">
                                         {domain.icon}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-foreground">{domain.label}</p>
-                                        <p className="text-xs text-muted-foreground line-clamp-1">{domain.desc}</p>
+                                        <p className="text-xs sm:text-sm font-bold text-foreground">{domain.label}</p>
+                                        <p className="text-[11px] sm:text-xs text-muted-foreground line-clamp-1">{domain.desc}</p>
                                     </div>
                                 </div>
                             ))}
@@ -1339,7 +1391,7 @@ function DashboardContent() {
                         if (e.target === e.currentTarget) setSelectedInterview(null);
                     }}
                 >
-                    <Card className="w-full max-w-2xl p-6 rounded-3xl border border-border bg-card shadow-xl space-y-4 max-h-[85vh] overflow-y-auto">
+                    <Card className="w-full max-w-2xl p-4 sm:p-6 rounded-3xl border border-border bg-card shadow-xl space-y-4 max-h-[85vh] overflow-y-auto">
                         <div className="flex items-center justify-between pb-3 border-b border-border/60">
                             <div>
                                 <div className="flex items-center gap-2">

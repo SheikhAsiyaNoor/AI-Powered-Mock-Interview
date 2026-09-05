@@ -260,7 +260,7 @@ export default function ArenaPage() {
     const progressPercent = Math.min(100, Math.round((currentXp % 300) / 3));
 
     return (
-        <div className="min-h-screen bg-background text-foreground py-10 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="min-h-screen bg-background text-foreground py-8 sm:py-10 px-4 sm:px-6 lg:px-8 xl:px-12 max-w-screen-2xl mx-auto">
             {/* Arena Hero Banner with Live Gamification Status & Pinned Badge */}
             <div className="relative overflow-hidden rounded-3xl border border-border/50 bg-gradient-to-br from-primary/10 via-background to-secondary/10 p-6 sm:p-10 mb-8 shadow-2xl backdrop-blur-xl">
                 <div className="absolute top-0 right-0 -mr-20 -mt-20 w-80 h-80 rounded-full bg-primary/15 blur-3xl pointer-events-none" />

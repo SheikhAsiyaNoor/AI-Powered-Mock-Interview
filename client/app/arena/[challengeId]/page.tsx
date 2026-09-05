@@ -207,10 +207,12 @@ export default function ChallengeRunnerPage({
         maxAllowedSwitches: 4,
         isActive: !evalResult && !isLoading && !!challenge,
         sessionType: "challenge",
+        storageKey: `iperitus_proctor_arena_${challengeId}`,
         onAutoQuit: () => {
             handleSubmitAnswers(true);
         }
     });
+
 
     if (isLoading || isAuthLoading) {
         return (
@@ -546,8 +548,10 @@ export default function ChallengeRunnerPage({
                 isTerminated={isTerminated}
                 terminationMessage={terminationMessage}
                 sessionType="challenge"
-                onDismiss={dismissWarning}
+                onDismiss={() => dismissWarning(isTerminated)}
+                onViewResults={() => dismissWarning(true)}
             />
+
         </div>
     );
 }

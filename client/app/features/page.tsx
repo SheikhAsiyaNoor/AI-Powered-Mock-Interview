@@ -93,30 +93,30 @@ export default function FeaturesPage() {
             <div className="absolute top-10 left-1/2 -translate-x-1/2 w-full max-w-4xl h-64 bg-gradient-to-b from-indigo-500/3 to-transparent blur-3xl pointer-events-none -z-10" />
 
             {/* Hero Section */}
-            <section className="pt-14 md:pt-20 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto text-center space-y-5">
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-muted/70 text-foreground/80 border border-border/80 text-xs font-medium tracking-wide backdrop-blur-md shadow-xs">
+            <section className="pt-12 sm:pt-16 md:pt-20 px-4 sm:px-6 lg:px-8 xl:px-12 max-w-screen-2xl mx-auto text-center space-y-5">
+                <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-muted/70 text-foreground/80 border border-border/80 text-[11px] sm:text-xs font-medium tracking-wide backdrop-blur-md shadow-xs max-w-full truncate">
                     <Sparkles className="w-3.5 h-3.5" /> <span className="font-semibold text-foreground">IPERITUS</span> — Absolute pointers, zero blind spots
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-foreground max-w-4xl mx-auto leading-tight">
+                <h1 className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-foreground max-w-4xl mx-auto leading-tight break-words">
                     Everything You Need to Ace Your{" "}
                     <span className="crystal-gradient-text">
                         Technical Rounds
                     </span>
                 </h1>
 
-                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+                <p className="text-sm sm:text-base text-muted-foreground max-w-2xl mx-auto leading-relaxed px-2 sm:px-0">
                     <strong className="text-foreground font-semibold">Absolute pointers, zero blind spots.</strong> Designed by engineers to replicate real company interviews. Explore our full suite of AI simulators, competitive arenas, and verified candidate feedback below.
                 </p>
             </section>
 
             {/* Features Explanation Cards */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <section className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {featuresList.map((feature, i) => (
                         <div
                             key={i}
-                            className="p-6 rounded-3xl glass-card glass-card-hover flex flex-col justify-between"
+                            className="p-5 sm:p-6 rounded-2xl sm:rounded-3xl glass-card glass-card-hover flex flex-col justify-between"
                         >
                             <div>
                                 <div className="flex items-center justify-between mb-4">
@@ -149,20 +149,20 @@ export default function FeaturesPage() {
             <PlatformReviews />
 
             {/* Bottom CTA Banner */}
-            <section className="max-w-5xl mx-auto px-4 pt-4">
-                <div className="p-8 sm:p-12 text-center bg-slate-900 dark:bg-slate-900/90 text-white rounded-3xl space-y-4 shadow-xl relative overflow-hidden border border-slate-800 backdrop-blur-xl">
+            <section className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 pt-4">
+                <div className="p-6 sm:p-12 text-center bg-slate-900 dark:bg-slate-900/90 text-white rounded-2xl sm:rounded-3xl space-y-4 shadow-xl relative overflow-hidden border border-slate-800 backdrop-blur-xl">
                     <h2 className="text-2xl sm:text-4xl font-extrabold relative z-10">Ready to Start Practicing?</h2>
                     <p className="text-xs sm:text-sm text-slate-300 max-w-xl mx-auto relative z-10">
                         Create your free candidate account to access AI mock interviews, competitive peer arena challenges, and leave your own verified review.
                     </p>
-                    <div className="pt-3 flex flex-wrap justify-center gap-3 relative z-10">
-                        <Link href="/register">
-                            <Button size="lg" className="rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold px-8 h-12 cursor-pointer shadow-md">
+                    <div className="pt-3 flex flex-col sm:flex-row justify-center gap-3 relative z-10 w-full sm:w-auto max-w-xs sm:max-w-none mx-auto">
+                        <Link href="/register" className="w-full sm:w-auto">
+                            <Button size="lg" className="w-full sm:w-auto rounded-full bg-white text-slate-900 hover:bg-slate-100 font-bold px-8 h-12 cursor-pointer shadow-md">
                                 Get Started Free 🚀
                             </Button>
                         </Link>
-                        <Link href="/login">
-                            <Button size="lg" variant="outline" className="rounded-full border-slate-700 text-white hover:bg-slate-800 font-bold px-8 h-12 cursor-pointer">
+                        <Link href="/login" className="w-full sm:w-auto">
+                            <Button size="lg" variant="outline" className="w-full sm:w-auto rounded-full border-slate-700 text-white hover:bg-slate-800 font-bold px-8 h-12 cursor-pointer">
                                 Candidate Login →
                             </Button>
                         </Link>

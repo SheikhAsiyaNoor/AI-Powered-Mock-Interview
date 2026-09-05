@@ -302,7 +302,7 @@ export default function SimulatorHubPage() {
     });
 
     return (
-        <div className="font-sans max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <div className="font-sans max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-8 space-y-8">
             {/* HERO BANNER */}
             <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-blue-950 via-indigo-900 to-slate-950 text-white p-6 sm:p-10 border border-white/10 shadow-2xl">
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-blue-500/15 rounded-full blur-3xl pointer-events-none"></div>

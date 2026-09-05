@@ -38,7 +38,7 @@ export default function BrandLogo({
                     <span className="font-extrabold text-base tracking-tight text-foreground transition-colors">
                         Iperitus
                     </span>
-                    <span className="text-[10px] text-muted-foreground font-medium tracking-tight -mt-0.5 whitespace-nowrap">
+                    <span className="hidden sm:inline-block text-[10px] text-muted-foreground font-medium tracking-tight -mt-0.5 whitespace-nowrap">
                         Absolute pointers, zero blind spots
                     </span>
                 </div>

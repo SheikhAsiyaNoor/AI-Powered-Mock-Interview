@@ -114,7 +114,17 @@ export function StarRatingDisplay({
     );
 }
 
-export default function PlatformReviews() {
+interface PlatformReviewsProps {
+    initialOpenForm?: boolean;
+    className?: string;
+    showSectionHeader?: boolean;
+}
+
+export default function PlatformReviews({
+    initialOpenForm = false,
+    className = "",
+    showSectionHeader = true,
+}: PlatformReviewsProps = {}) {
     const { user, isLoggedIn } = useAuth();
 
     const [reviews, setReviews] = useState<ReviewItem[]>([]);
@@ -131,7 +141,14 @@ export default function PlatformReviews() {
     const [successMessage, setSuccessMessage] = useState("");
 
     // Form state for logged-in users
-    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(initialOpenForm);
+
+    useEffect(() => {
+        if (initialOpenForm) {
+            setIsFormOpen(true);
+        }
+    }, [initialOpenForm]);
+
     const [rating, setRating] = useState<number>(5.0);
     const [hoverRating, setHoverRating] = useState<number | null>(null);
     const [headline, setHeadline] = useState("");
@@ -174,9 +191,15 @@ export default function PlatformReviews() {
             const found = reviews.find((r) => r.userId === user.id);
             if (found) {
                 setUserExistingReview(found);
+                if (initialOpenForm) {
+                    setRating(found.rating || 5.0);
+                    setHeadline(found.headline || "");
+                    setComment(found.comment || "");
+                    setFeatureHighlight(found.featureHighlight || "Overall Platform");
+                }
             }
         }
-    }, [user, reviews]);
+    }, [user, reviews, initialOpenForm]);
 
     // Pre-populate form if user edits their review
     const handleOpenEdit = () => {
@@ -293,28 +316,30 @@ export default function PlatformReviews() {
     }, [reviews, filterRating, sortBy]);
 
     return (
-        <section id="community-reviews" className="w-full pt-14 pb-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section id="community-reviews" className={`w-full ${showSectionHeader ? "pt-12 sm:pt-14 pb-8" : "pt-2 pb-6"} ${className}`}>
+            <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 lg:px-8 xl:px-12">
                 {/* Section Header */}
-                <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
-                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Verified Candidate Reviews</span>
+                {showSectionHeader && (
+                    <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10 space-y-2">
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-semibold">
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span>Verified Candidate Reviews</span>
+                        </div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+                            What Practicing Candidates Say
+                        </h2>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                            Real feedback from developers and students who practiced technical interviews and elevated their careers with Iperitus.
+                        </p>
                     </div>
-                    <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
-                        What Practicing Candidates Say
-                    </h2>
-                    <p className="text-xs sm:text-sm text-muted-foreground">
-                        Real feedback from developers and students who practiced technical interviews and elevated their careers with Iperitus.
-                    </p>
-                </div>
+                )}
 
                 {/* Rating Stats Hero Card */}
-                <div className="mb-10 rounded-3xl glass-card p-6 sm:p-8 shadow-lg">
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <div className="mb-8 sm:mb-10 rounded-2xl sm:rounded-3xl glass-card p-4 sm:p-8 shadow-lg">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
                         {/* Overall Score */}
-                        <div className="lg:col-span-4 flex flex-col items-center justify-center text-center sm:border-r sm:border-border/60 lg:pr-8">
-                            <div className="text-5xl sm:text-6xl font-black text-foreground tracking-tight flex items-baseline gap-1">
+                        <div className="lg:col-span-4 flex flex-col items-center justify-center text-center pb-6 lg:pb-0 border-b lg:border-b-0 lg:border-r border-border/60 lg:pr-8">
+                            <div className="text-4xl sm:text-6xl font-black text-foreground tracking-tight flex items-baseline gap-1">
                                 <span>{stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "0.0"}</span>
                                 <span className="text-lg sm:text-xl font-bold text-muted-foreground">/ 5.0</span>
                             </div>
@@ -338,7 +363,7 @@ export default function PlatformReviews() {
                         </div>
 
                         {/* Breakdown Bars */}
-                        <div className="lg:col-span-5 space-y-2">
+                        <div className="lg:col-span-5 space-y-2 pb-6 lg:pb-0 border-b lg:border-b-0 border-border/60">
                             {[5, 4, 3, 2, 1].map((starNum) => {
                                 const count = stats.starCounts[starNum] || 0;
                                 const percent = stats.totalReviews > 0 ? Math.round((count / stats.totalReviews) * 100) : 0;
@@ -347,9 +372,9 @@ export default function PlatformReviews() {
                                         key={starNum}
                                         type="button"
                                         onClick={() => setFilterRating(filterRating === String(starNum) ? "all" : String(starNum))}
-                                        className="w-full flex items-center gap-3 text-xs group cursor-pointer hover:opacity-80 transition-opacity"
+                                        className="w-full flex items-center gap-2 sm:gap-3 text-xs group cursor-pointer hover:opacity-80 transition-opacity"
                                     >
-                                        <div className="flex items-center gap-1 w-14 font-semibold text-foreground shrink-0 justify-end">
+                                        <div className="flex items-center gap-1 w-11 sm:w-14 font-semibold text-foreground shrink-0 justify-end">
                                             <span>{starNum}</span>
                                             <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                                         </div>
@@ -359,7 +384,7 @@ export default function PlatformReviews() {
                                                 style={{ width: `${percent}%` }}
                                             />
                                         </div>
-                                        <div className="w-10 text-right text-[11px] font-mono text-muted-foreground">
+                                        <div className="w-8 sm:w-10 text-right text-[11px] font-mono text-muted-foreground">
                                             {percent}%
                                         </div>
                                     </button>
@@ -368,7 +393,7 @@ export default function PlatformReviews() {
                         </div>
 
                         {/* Action Callout depending on login state */}
-                        <div className="lg:col-span-3 flex flex-col items-center justify-center p-4 rounded-2xl bg-muted/40 border border-border/70 text-center">
+                        <div className="lg:col-span-3 flex flex-col items-center justify-center p-4 sm:p-5 rounded-2xl bg-muted/40 border border-border/70 text-center w-full">
                             {isLoggedIn ? (
                                 <>
                                     <UserCheck className="w-8 h-8 text-foreground/80 mb-2" />
