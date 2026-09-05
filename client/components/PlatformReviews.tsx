@@ -315,16 +315,20 @@ export default function PlatformReviews() {
                         {/* Overall Score */}
                         <div className="lg:col-span-4 flex flex-col items-center justify-center text-center sm:border-r sm:border-border/60 lg:pr-8">
                             <div className="text-5xl sm:text-6xl font-black text-foreground tracking-tight flex items-baseline gap-1">
-                                <span>{stats.averageRating ? stats.averageRating.toFixed(1) : "5.0"}</span>
-                                <span className="text-lg sm:text-xl font-bold text-muted-foreground">/ 5.0</span>
+                                <span>{stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "—"}</span>
+                                <span className="text-lg sm:text-xl font-bold text-muted-foreground">{stats.totalReviews > 0 ? "/ 5.0" : "New"}</span>
                             </div>
 
                             <div className="my-2.5">
-                                <StarRatingDisplay rating={stats.averageRating || 5.0} size={24} />
+                                <StarRatingDisplay rating={stats.totalReviews > 0 ? stats.averageRating : 0} size={24} />
                             </div>
 
                             <p className="text-xs font-medium text-muted-foreground">
-                                Based on <strong className="text-foreground">{stats.totalReviews}</strong> community reviews
+                                {stats.totalReviews > 0 ? (
+                                    <>Based on <strong className="text-foreground">{stats.totalReviews}</strong> community reviews</>
+                                ) : (
+                                    "No reviews yet. Be the first to rate!"
+                                )}
                             </p>
 
                             <div className="mt-4 flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-semibold bg-emerald-500/10 px-3 py-1 rounded-full">
@@ -714,6 +718,36 @@ export default function PlatformReviews() {
                     <div className="py-12 text-center text-xs text-muted-foreground">
                         Loading community reviews...
                     </div>
+                ) : reviews.length === 0 ? (
+                    <div className="py-14 text-center rounded-3xl border border-dashed border-border/80 bg-muted/20 p-8 space-y-3">
+                        <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto mb-2">
+                            <Sparkles className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-base font-bold text-foreground">No candidate reviews yet</h3>
+                        <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                            Be the first candidate to practice an interview and share your feedback on the platform!
+                        </p>
+                        <div className="pt-2">
+                            {isLoggedIn ? (
+                                <Button
+                                    size="sm"
+                                    onClick={handleOpenEdit}
+                                    className="rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 h-9 shadow-md cursor-pointer"
+                                >
+                                    <Edit3 className="w-3.5 h-3.5 mr-1.5" /> Write the First Review
+                                </Button>
+                            ) : (
+                                <Link href="/login">
+                                    <Button
+                                        size="sm"
+                                        className="rounded-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-5 h-9 cursor-pointer"
+                                    >
+                                        Sign In to Write a Review
+                                    </Button>
+                                </Link>
+                            )}
+                        </div>
+                    </div>
                 ) : filteredReviews.length === 0 ? (
                     <div className="py-12 text-center rounded-3xl border border-dashed border-border/80 p-8 space-y-2">
                         <p className="text-sm font-semibold text-foreground">No reviews match your selected filter.</p>
@@ -722,7 +756,7 @@ export default function PlatformReviews() {
                             variant="outline"
                             size="sm"
                             onClick={() => setFilterRating("all")}
-                            className="mt-2 rounded-full text-xs"
+                            className="mt-2 rounded-full text-xs cursor-pointer"
                         >
                             Show All Reviews
                         </Button>

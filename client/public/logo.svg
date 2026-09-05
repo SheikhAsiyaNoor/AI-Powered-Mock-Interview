@@ -1,0 +1,162 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%" fill="none">
+  <defs>
+    <!-- Background Canvas Gradient -->
+    <radialGradient id="canvasBg" cx="50%" cy="30%" r="80%">
+      <stop offset="0%" stop-color="#0F172A" />
+      <stop offset="60%" stop-color="#070A14" />
+      <stop offset="100%" stop-color="#020306" />
+    </radialGradient>
+
+    <!-- Center Monolith Surface Gradient -->
+    <linearGradient id="monolithGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B" />
+      <stop offset="60%" stop-color="#0F172A" />
+      <stop offset="100%" stop-color="#0A0F1D" />
+    </linearGradient>
+
+    <!-- Headband Arc & Boom Gradient -->
+    <linearGradient id="headsetGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#6366F1" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+
+    <!-- Ear Cushion Gradient -->
+    <linearGradient id="cushionGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155" />
+      <stop offset="100%" stop-color="#0F172A" />
+    </linearGradient>
+
+    <!-- Mic Core Glow Gradient -->
+    <linearGradient id="micGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8" />
+      <stop offset="50%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#EC4899" />
+    </linearGradient>
+
+    <!-- Glowing Filters -->
+    <filter id="coreGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <filter id="bloom" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="12" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Deep Canvas Base -->
+  <rect width="512" height="512" rx="120" fill="url(#canvasBg)" />
+  <rect width="510" height="510" x="1" y="1" rx="119" stroke="rgba(255,255,255,0.08)" stroke-width="1.5" />
+
+  <!-- Ambient Internal Bloom Behind Entity -->
+  <circle cx="256" cy="245" r="130" fill="#6366F1" opacity="0.16" />
+  <circle cx="230" cy="370" r="80" fill="#38BDF8" opacity="0.18" />
+
+  <!-- ==================== WEARING ENTITY (AI INTERVIEW BOT MONOLITH) ==================== -->
+  <!-- Geometric AI Interview Pod wearing the headset -->
+  <rect x="176" y="148" width="160" height="190" rx="60" fill="url(#monolithGrad)" stroke="rgba(255,255,255,0.12)" stroke-width="3" />
+
+  <!-- Recessed Visual Screen / Acoustic Grid (The "Face") -->
+  <rect x="200" y="184" width="112" height="96" rx="28" fill="#060A13" stroke="rgba(56,189,248,0.2)" stroke-width="2" />
+
+  <!-- Central Dialogue / Voice EQ inside Bot Face -->
+  <g stroke-linecap="round" filter="url(#coreGlow)">
+    <line x1="226" y1="222" x2="226" y2="242" stroke="#38BDF8" stroke-width="4" />
+    <line x1="238" y1="210" x2="238" y2="254" stroke="#60A5FA" stroke-width="4.5" />
+    <line x1="250" y1="200" x2="250" y2="264" stroke="#818CF8" stroke-width="5" />
+    <line x1="262" y1="210" x2="262" y2="254" stroke="#C084FC" stroke-width="4.5" />
+    <line x1="274" y1="218" x2="274" y2="246" stroke="#F472B6" stroke-width="4" />
+    <line x1="286" y1="225" x2="286" y2="239" stroke="#FB7185" stroke-width="3.5" />
+  </g>
+
+  <!-- Bot Tie / Career Anchor Below Pod -->
+  <path d="M 242 342 L 270 342 L 264 382 L 256 394 L 248 382 Z" fill="#1E293B" stroke="#6366F1" stroke-width="2" />
+
+  <!-- ==================== HEADSET FITTED OVER MONOLITH ==================== -->
+  <!-- Headband Arch Resting directly on Top -->
+  <path d="M 166 215 
+           C 166 120 200 90 256 90 
+           C 312 90 346 120 346 215" 
+        stroke="url(#headsetGrad)" 
+        stroke-width="16" 
+        stroke-linecap="round" />
+
+  <!-- Headband Interior Highlight Line -->
+  <path d="M 188 200 
+           C 192 135 218 114 256 114 
+           C 294 114 320 135 324 200" 
+        stroke="rgba(255,255,255,0.22)" 
+        stroke-width="3" 
+        stroke-linecap="round" />
+
+  <!-- Top Headband AI Spark / Node Emblem -->
+  <path d="M 256 70 
+           C 257 80 262 85 272 86 
+           C 262 87 257 92 256 102 
+           C 255 92 250 87 240 86 
+           C 250 85 255 80 256 70 Z" 
+        fill="#FFFFFF" 
+        filter="url(#bloom)" />
+
+  <!-- ==================== RIGHT EAR CLAMP / CUSHION ==================== -->
+  <!-- Right Inner Foam Cushion gripping the pod side -->
+  <rect x="334" y="196" width="14" height="74" rx="7" fill="url(#cushionGrad)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" />
+  <!-- Right Outer Shell Clamp -->
+  <rect x="344" y="190" width="22" height="86" rx="11" fill="url(#monolithGrad)" stroke="url(#headsetGrad)" stroke-width="4" />
+
+  <!-- ==================== LEFT NEURAL EAR CUP ==================== -->
+  <!-- Left Inner Foam Cushion gripping the pod side -->
+  <rect x="164" y="196" width="14" height="74" rx="7" fill="url(#cushionGrad)" stroke="rgba(255,255,255,0.1)" stroke-width="1.5" />
+
+  <!-- Left Main Ear Cup Shell -->
+  <rect x="130" y="186" width="38" height="94" rx="19" fill="url(#monolithGrad)" stroke="url(#headsetGrad)" stroke-width="4" />
+
+  <!-- Ear Cup Neural Circuit Traces & Synapses -->
+  <g stroke="#38BDF8" stroke-linecap="round" stroke-linejoin="round" opacity="0.9" filter="url(#coreGlow)">
+    <path d="M 144 206 L 152 216 L 152 248 L 142 258" stroke-width="2" />
+    <path d="M 152 232 L 160 232" stroke-width="2" />
+    <circle cx="144" cy="206" r="2.5" fill="#38BDF8" />
+    <circle cx="152" cy="216" r="2" fill="#818CF8" />
+    <circle cx="160" cy="232" r="3" fill="#FFFFFF" />
+    <circle cx="142" cy="258" r="2.5" fill="#38BDF8" />
+  </g>
+
+  <!-- ==================== MICROPHONE BOOM ARM ==================== -->
+  <!-- Arm extending cleanly downward and curling across to mouth region -->
+  <path d="M 148 274 
+           C 148 335 170 368 214 368 
+           L 242 368" 
+        stroke="url(#headsetGrad)" 
+        stroke-width="10" 
+        stroke-linecap="round" />
+
+  <!-- Ear-Cup Pivot Hinge Joint -->
+  <circle cx="148" cy="274" r="8" fill="#0F172A" stroke="#38BDF8" stroke-width="3" />
+  <circle cx="148" cy="274" r="2.5" fill="#FFFFFF" />
+
+  <!-- ==================== SMART MIC CAPSULE ==================== -->
+  <!-- Active Capsule Glow -->
+  <rect x="246" y="352" width="48" height="32" rx="16" fill="url(#micGrad)" opacity="0.5" filter="url(#bloom)" />
+
+  <!-- Mic Capsule Outer Housing -->
+  <rect x="246" y="352" width="48" height="32" rx="16" fill="#0B1120" stroke="url(#micGrad)" stroke-width="3.5" />
+
+  <!-- Mic Slits / Acoustic Pickup Pattern -->
+  <g stroke="#FFFFFF" stroke-linecap="round" stroke-width="2.5" opacity="0.95" filter="url(#coreGlow)">
+    <line x1="262" y1="361" x2="262" y2="375" />
+    <line x1="270" y1="358" x2="270" y2="378" />
+    <line x1="278" y1="361" x2="278" y2="375" />
+  </g>
+
+  <!-- Forward Spoken Audio Radiance -->
+  <path d="M 306 360 C 314 364 314 372 306 376" stroke="#38BDF8" stroke-width="3.5" stroke-linecap="round" opacity="0.9" filter="url(#coreGlow)" />
+  <path d="M 318 354 C 330 362 330 374 318 382" stroke="#818CF8" stroke-width="3" stroke-linecap="round" opacity="0.6" filter="url(#coreGlow)" />
+</svg>

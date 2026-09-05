@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/Authcontext";
 import ThemeToggle from "@/components/ThemeToggle";
+import BrandLogo from "@/components/BrandLogo";
 import { ShieldCheck, GraduationCap, Swords, Lock, User as UserIcon } from "lucide-react";
 
 const Navbar = () => {
@@ -55,18 +56,8 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Brand Logo */}
-                    <Link href={isLoggedIn ? "/dashboard" : "/"} className="flex items-center gap-2 group">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white font-bold text-sm shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-                            AI
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="font-bold text-base tracking-tight text-foreground group-hover:text-blue-600 transition-colors">
-                                MockInterview
-                            </span>
-                            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold -mt-1">
-                                AI Powered
-                            </span>
-                        </div>
+                    <Link href={isLoggedIn ? "/dashboard" : "/"}>
+                        <BrandLogo size={38} />
                     </Link>
 
                     {/* Desktop Navigation Links */}

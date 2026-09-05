@@ -2,87 +2,12 @@ const jwt = require("jsonwebtoken");
 const PlatformReview = require("../models/PlatformReview");
 const User = require("../models/User");
 
-// Initial Seed Reviews for visitors & newcomers to see when collection is empty
-const INITIAL_COMMUNITY_REVIEWS = [
-    {
-        userName: "Aarav Sharma",
-        userRole: "Verified Candidate",
-        rating: 5.0,
-        headline: "Aced my Amazon SDE interview!",
-        comment: "The real-time Groq AI feedback felt remarkably similar to actual interviewers. Practicing the system design questions and getting instant critique on clarity and architecture gave me immense confidence.",
-        featureHighlight: "Real-Time AI Evaluation",
-        isVerifiedCandidate: true,
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-    },
-    {
-        userName: "Sneha Patel",
-        userRole: "Verified Candidate",
-        rating: 4.5,
-        headline: "The Peer Arena is intense & addictive",
-        comment: "Competing against other candidates on live algorithmic problems pushed me out of my comfort zone. The 4.5 rating is only because I wish there were even more competitive ladder seasons!",
-        featureHighlight: "Peer Challenge Arena",
-        isVerifiedCandidate: true,
-        createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000)
-    },
-    {
-        userName: "Michael Chen",
-        userRole: "Verified Candidate",
-        rating: 5.0,
-        headline: "Voice simulation was surprisingly natural",
-        comment: "I used to get extremely nervous speaking technical explanations aloud. The Voice Recruiter Simulator trained me to articulate time complexity and edge cases calmly. Highly recommended!",
-        featureHighlight: "Recruiter Simulator",
-        isVerifiedCandidate: true,
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
-    },
-    {
-        userName: "Priya Nair",
-        userRole: "Verified Candidate",
-        rating: 4.5,
-        headline: "Resume skill detection saved me hours",
-        comment: "Uploaded my resume and within seconds it identified gap areas in my React and Node.js knowledge, directing me to targeted interview questions that actually mattered.",
-        featureHighlight: "Resume Analysis",
-        isVerifiedCandidate: true,
-        createdAt: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000)
-    }
-];
-
-/**
- * Helper: Ensure initial seed reviews exist if database collection is empty
- */
-const ensureSeedReviews = async () => {
-    try {
-        const count = await PlatformReview.countDocuments();
-        if (count === 0) {
-            // Find a fallback user id if available, or create reviews without dummy ref requirement
-            const dummyUser = await User.findOne({});
-            if (dummyUser) {
-                const reviewsToInsert = INITIAL_COMMUNITY_REVIEWS.map((rev) => ({
-                    ...rev,
-                    userId: dummyUser._id
-                }));
-                // Insert only if not yet present
-                for (const rev of reviewsToInsert) {
-                    await PlatformReview.updateOne(
-                        { userName: rev.userName },
-                        { $setOnInsert: rev },
-                        { upsert: true }
-                    );
-                }
-            }
-        }
-    } catch (err) {
-        console.warn("[ReviewController] Seed reviews initialization notice:", err.message);
-    }
-};
-
 /**
  * GET /api/reviews
  * Public endpoint for visitors and newcomers to view reviews & stats
  */
 const getReviews = async (req, res) => {
     try {
-        await ensureSeedReviews();
-
         const reviews = await PlatformReview.find()
             .sort({ createdAt: -1 })
             .lean();

@@ -68,6 +68,13 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://ai-powered-mock-interview-gules.vercel.app",
   },
+  icons: {
+    icon: [
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
